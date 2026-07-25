@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   GestureResponderEvent,
   Pressable,
   StyleSheet,
@@ -10,12 +11,20 @@ import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
 type PrimaryButtonProps = {
   label: string;
   onPress?: (event: GestureResponderEvent) => void;
+  loading?: boolean;
+  disabled?: boolean;
 };
 
-export function PrimaryButton({ label, onPress }: PrimaryButtonProps) {
+export function PrimaryButton({ label, onPress, loading = false, disabled = false }: PrimaryButtonProps) {
   return (
-    <Pressable style={styles.button} onPress={onPress}>
-      <Text style={styles.label}>{label}</Text>
+    <Pressable
+      style={[styles.button, (disabled || loading) && styles.buttonDisabled]}
+      onPress={loading || disabled ? undefined : onPress}>
+      {loading ? (
+        <ActivityIndicator color={colors.background} />
+      ) : (
+        <Text style={styles.label}>{label}</Text>
+      )}
     </Pressable>
   );
 }
@@ -27,6 +36,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   label: {
     color: colors.background,

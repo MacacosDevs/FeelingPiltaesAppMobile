@@ -11,6 +11,7 @@ export const fontFamily = {
 export const fontWeight = {
   regular: '400' as const,
   medium: '500' as const,
+  semibold: '600' as const,
 };
 
 export const fontSize = {
@@ -19,6 +20,8 @@ export const fontSize = {
   smMedium: 11,
   base: 12,
   md: 13,
+  classTitle: 14,
   lg: 22,
+  heading: 24,
   xl: 26,
 };

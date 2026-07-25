@@ -9,4 +9,9 @@ export const colors = {
   chipBackground: '#f0ede8',
   navInactive: '#c9beb2',
   googleRed: '#ea4335',
+  error: '#c0392b',
+  pillBorder: '#e3dad0',
+  gold: '#b6944d',
+  spotsAvailable: '#7a8f6f',
+  accentSoft: 'rgba(169, 105, 79, 0.14)',
 } as const;
