@@ -14,4 +14,5 @@ export const colors = {
   gold: '#b6944d',
   spotsAvailable: '#7a8f6f',
   accentSoft: 'rgba(169, 105, 79, 0.14)',
+  bacuFit: '#5b7f95',
 } as const;

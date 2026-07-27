@@ -1,5 +1,7 @@
 import { addDays, combineDateAndHora, startOfDay } from '../utils/date';
 
+export type Categoria = 'pilates' | 'bacufit';
+
 export type Clase = {
   id: string;
   fecha: Date;
@@ -11,6 +13,7 @@ export type Clase = {
   precio: string;
   capacidad: number;
   lugaresOcupados: number;
+  categoria: Categoria;
 };
 
 const today = startOfDay(new Date());
@@ -18,6 +21,10 @@ const today = startOfDay(new Date());
 // Coincide con "Máximo 8 personas por clase" del texto de la pantalla de
 // inicio (grupos reducidos).
 const CAPACIDAD_ESTANDAR = 8;
+
+// Las máquinas Bacu Fit son un cupo limitado, distinto de las clases de
+// Pilates en grupo.
+const CAPACIDAD_BACU_FIT = 4;
 
 // No existe todavía un backend de horario/reservas; este contenido de
 // referencia se genera en relación a la fecha actual (para poder probar el
@@ -34,6 +41,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 6,
+    categoria: 'pilates',
   },
   {
     id: 'hoy-reformer-9',
@@ -46,6 +54,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 1,
+    categoria: 'pilates',
   },
   {
     id: 'hoy-reformer-1130',
@@ -58,6 +67,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 4,
+    categoria: 'pilates',
   },
   {
     id: 'hoy-barre-1015',
@@ -70,6 +80,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 5,
+    categoria: 'pilates',
   },
   {
     id: 'hoy-mat-1800',
@@ -82,6 +93,7 @@ export const clases: Clase[] = [
     precio: '$220',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 2,
+    categoria: 'pilates',
   },
   {
     id: 'manana-reformer-8',
@@ -94,6 +106,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 6,
+    categoria: 'pilates',
   },
   {
     id: 'manana-barre-1730',
@@ -106,6 +119,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 1,
+    categoria: 'pilates',
   },
   {
     id: 'pasado-manana-mat-9',
@@ -118,6 +132,7 @@ export const clases: Clase[] = [
     precio: '$220',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 1,
+    categoria: 'pilates',
   },
   {
     id: 'pasado-manana-reformer-19',
@@ -130,6 +145,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 4,
+    categoria: 'pilates',
   },
   {
     id: 'ayer-reformer-10',
@@ -142,6 +158,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 3,
+    categoria: 'pilates',
   },
   {
     id: 'en4dias-barre-9',
@@ -154,6 +171,7 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 2,
+    categoria: 'pilates',
   },
   {
     id: 'en4dias-reformer-18',
@@ -166,6 +184,59 @@ export const clases: Clase[] = [
     precio: '$250',
     capacidad: CAPACIDAD_ESTANDAR,
     lugaresOcupados: 7,
+    categoria: 'pilates',
+  },
+  {
+    id: 'hoy-bacufit-830',
+    fecha: addDays(today, 0),
+    hora: '8:30 am',
+    duracion: '30 min',
+    nombre: 'Bacu Fit',
+    instructora: 'Con Rocío Fernández',
+    sala: 'Studio 14',
+    precio: '$300',
+    capacidad: CAPACIDAD_BACU_FIT,
+    lugaresOcupados: 2,
+    categoria: 'bacufit',
+  },
+  {
+    id: 'hoy-bacufit-1700',
+    fecha: addDays(today, 0),
+    hora: '5:00 pm',
+    duracion: '30 min',
+    nombre: 'Bacu Fit',
+    instructora: 'Con Rocío Fernández',
+    sala: 'Studio 14',
+    precio: '$300',
+    capacidad: CAPACIDAD_BACU_FIT,
+    lugaresOcupados: 4,
+    categoria: 'bacufit',
+  },
+  {
+    id: 'manana-bacufit-900',
+    fecha: addDays(today, 1),
+    hora: '9:00 am',
+    duracion: '30 min',
+    nombre: 'Bacu Fit',
+    instructora: 'Con Rocío Fernández',
+    sala: 'Studio 14',
+    precio: '$300',
+    capacidad: CAPACIDAD_BACU_FIT,
+    lugaresOcupados: 1,
+    categoria: 'bacufit',
+  },
+  {
+    id: 'pasado-manana-bacufit-1830',
+    fecha: addDays(today, 2),
+    hora: '6:30 pm',
+    duracion: '30 min',
+    nombre: 'Bacu Fit',
+    instructora: 'Con Rocío Fernández',
+    sala: 'Studio 14',
+    precio: '$300',
+    capacidad: CAPACIDAD_BACU_FIT,
+    lugaresOcupados: 3,
+    categoria: 'bacufit',
   },
 ];
 
@@ -210,6 +281,12 @@ export const INSTRUCTOR_META: Record<string, InstructorMeta> = {
     clasesImpartidas: 198,
     especialidades: ['Mat Pilates'],
     bio: 'Especialista en Mat Pilates. Enfocada en un método consciente, de bajo impacto y gran efectividad.',
+  },
+  'Con Rocío Fernández': {
+    rating: 4.7,
+    clasesImpartidas: 134,
+    especialidades: ['Bacu Fit'],
+    bio: 'Especialista en Bacu Fit. Rentas de máquina cortas y de alta intensidad, enfocadas en tonificación.',
   },
 };
 

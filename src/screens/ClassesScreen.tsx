@@ -7,8 +7,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronRightIcon, FunnelIcon } from 'react-native-heroicons/outline';
 import { ClassFilterModal, type FilterOption } from '../components/ClassFilterModal';
 import { CalendarModal } from '../components/CalendarModal';
+import { CategoryToggle } from '../components/CategoryToggle';
 import { CapacityIndicator } from '../components/CapacityIndicator';
-import { clases, isClasePast } from '../data/clases';
+import { clases, isClasePast, type Categoria } from '../data/clases';
+import { paquetesActivos } from '../data/paquete';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { useSportMode } from '../context/SportModeContext';
 import { CourtsScreen } from './CourtsScreen';
@@ -39,6 +41,11 @@ const SALON_OPTIONS: FilterOption[] = [
 
 const today = startOfDay(new Date());
 
+function tienePaqueteDe(categoria: Categoria): boolean {
+  const paquete = paquetesActivos[categoria];
+  return !!paquete && paquete.restantes > 0;
+}
+
 type ClassesNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Clases'>,
   NativeStackNavigationProp<RootStackParamList>
@@ -47,6 +54,7 @@ type ClassesNavigationProp = CompositeNavigationProp<
 export function ClassesScreen() {
   const navigation = useNavigation<ClassesNavigationProp>();
   const { sport } = useSportMode();
+  const [categoria, setCategoria] = useState<Categoria>('pilates');
   const [weekStart, setWeekStart] = useState(() => mondayOf(today));
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
@@ -55,6 +63,7 @@ export function ClassesScreen() {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   const activeFilterCount = selectedTipos.length + selectedSalones.length;
+  const tipoOptions = categoria === 'pilates' ? TIPO_OPTIONS : [];
 
   const weekDays = useMemo(
     () => Array.from({ length: DAYS_IN_STRIP }, (_, index) => addDays(weekStart, index)),
@@ -65,11 +74,12 @@ export function ClassesScreen() {
     () =>
       clases.filter(
         clase =>
+          clase.categoria === categoria &&
           isSameDay(clase.fecha, selectedDate) &&
           (selectedSalones.length === 0 || selectedSalones.includes(clase.sala)) &&
           (selectedTipos.length === 0 || selectedTipos.includes(clase.nombre)),
       ),
-    [selectedDate, selectedSalones, selectedTipos],
+    [categoria, selectedDate, selectedSalones, selectedTipos],
   );
 
   const emptyStateMessage = useMemo(() => {
@@ -105,23 +115,32 @@ export function ClassesScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.title}>Horario</Text>
-
-        <Pressable style={styles.filterPill} onPress={() => setFilterModalOpen(true)}>
-          <FunnelIcon color={colors.textPrimary} size={16} />
-          <Text style={styles.filterPillLabel}>Filtrar</Text>
-          {activeFilterCount > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeLabel}>{activeFilterCount}</Text>
-            </View>
-          )}
-        </Pressable>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Horario</Text>
+          <CategoryToggle
+            value={categoria}
+            onChange={nueva => {
+              setCategoria(nueva);
+              setSelectedTipos([]);
+            }}
+          />
+        </View>
 
         <View style={styles.monthRow}>
-          <Pressable style={styles.monthPill} onPress={() => setCalendarOpen(true)}>
-            <Text style={styles.pillLabel}>{formatMonthYearLong(selectedDate)}</Text>
-            <Text style={styles.chevron}>⌄</Text>
-          </Pressable>
+          <View style={styles.leftGroup}>
+            <Pressable style={styles.filterBtn} onPress={() => setFilterModalOpen(true)}>
+              <FunnelIcon color={colors.textPrimary} size={16} />
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeLabel}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </Pressable>
+            <Pressable style={styles.monthPill} onPress={() => setCalendarOpen(true)}>
+              <Text style={styles.pillLabel}>{formatMonthYearLong(selectedDate)}</Text>
+              <Text style={styles.chevron}>⌄</Text>
+            </Pressable>
+          </View>
           <View style={styles.navRow}>
             <Pressable style={styles.circleBtn} onPress={goToPreviousWeek}>
               <Text style={styles.circleBtnLabel}>‹</Text>
@@ -191,7 +210,9 @@ export function ClassesScreen() {
                     </View>
 
                     <View style={styles.rightCol}>
-                      <Text style={styles.classPrecio}>{clase.precio}</Text>
+                      {!tienePaqueteDe(clase.categoria) && (
+                        <Text style={styles.classPrecio}>{clase.precio}</Text>
+                      )}
                       {past ? (
                         <View style={styles.pastBadge}>
                           <Text style={styles.pastBadgeLabel}>Finalizada</Text>
@@ -213,7 +234,7 @@ export function ClassesScreen() {
 
       <ClassFilterModal
         visible={filterModalOpen}
-        tipoOptions={TIPO_OPTIONS}
+        tipoOptions={tipoOptions}
         salonOptions={SALON_OPTIONS}
         selectedTipos={selectedTipos}
         selectedSalones={selectedSalones}
@@ -243,35 +264,42 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 14,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   title: {
     fontFamily: fontFamily.body,
     fontWeight: fontWeight.semibold,
     fontSize: fontSize.heading,
     color: colors.textPrimary,
   },
-  filterPill: {
-    alignSelf: 'flex-start',
+  leftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
+  },
+  filterBtn: {
+    width: 35,
     height: 35,
     borderRadius: radius.input,
     borderWidth: 1,
     borderColor: colors.pillBorder,
     backgroundColor: colors.surface,
-    paddingHorizontal: 14,
-  },
-  filterPillLabel: {
-    fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.base,
-    color: colors.textPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterBadge: {
-    minWidth: 18,
-    height: 18,
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
     borderRadius: radius.pill,
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.accent,

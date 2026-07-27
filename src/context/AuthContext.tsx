@@ -7,11 +7,15 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as authApi from '../api/auth';
 import { actualizarPerfil, obtenerPerfil, subirFoto, type ImageAsset } from '../api/usuarios';
 import type { UsuarioResponse } from '../api/types';
+import { GOOGLE_WEB_CLIENT_ID } from '../config/googleAuth';
 
 const TOKEN_STORAGE_KEY = 'feelingpilates.token';
+
+GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
 
 type AuthContextValue = {
   token: string | null;
@@ -22,6 +26,7 @@ type AuthContextValue = {
   photoVersion: number;
   login: (correo: string, contrasena: string) => Promise<void>;
   registrar: (correo: string, contrasena: string, nombre: string) => Promise<void>;
+  loginConGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (nombre: string, telefono: string, descripcion: string) => Promise<void>;
   updatePhoto: (asset: ImageAsset) => Promise<void>;
@@ -73,6 +78,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(response.token);
   }, [applyUser]);
 
+  const loginConGoogle = useCallback(async () => {
+    await GoogleSignin.hasPlayServices();
+    const signInResponse = await GoogleSignin.signIn();
+    if (signInResponse.type !== 'success' || !signInResponse.data.idToken) {
+      throw new Error('No se pudo iniciar sesión con Google');
+    }
+    const response = await authApi.loginConGoogle(signInResponse.data.idToken);
+    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.token);
+    applyUser(await obtenerPerfil(response.token));
+    setToken(response.token);
+  }, [applyUser]);
+
   const logout = useCallback(async () => {
     await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
     setToken(null);
@@ -114,11 +131,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       photoVersion,
       login,
       registrar,
+      loginConGoogle,
       logout,
       updateProfile,
       updatePhoto,
     }),
-    [token, user, isLoading, photoVersion, login, registrar, logout, updateProfile, updatePhoto],
+    [
+      token,
+      user,
+      isLoading,
+      photoVersion,
+      login,
+      registrar,
+      loginConGoogle,
+      logout,
+      updateProfile,
+      updatePhoto,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon, MapPinIcon, UserPlusIcon } from 'react-native-heroicons/outline';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { OutlineButton } from '../components/OutlineButton';
 import { MapPreview } from '../components/MapPreview';
 import {
   DURACIONES,
@@ -13,6 +14,7 @@ import {
   horarioById,
   horarios,
 } from '../data/canchas';
+import { useCourtReservations } from '../context/CourtReservationsContext';
 import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
@@ -23,8 +25,10 @@ const MODALIDADES = ['Individual', 'Dobles'] as const;
 
 export function CourtBookingScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const { addReservation } = useCourtReservations();
   const [duracionMin, setDuracionMin] = useState(90);
   const [modalidad, setModalidad] = useState<'Individual' | 'Dobles'>('Dobles');
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
   const activeHorario = horarioById(route.params.horarioId) ?? horarios[0];
   const cancha = canchaById(activeHorario.canchaId);
@@ -51,6 +55,8 @@ export function CourtBookingScreen({ navigation, route }: Props) {
   }
 
   function reservar() {
+    setConfirmModalOpen(false);
+    addReservation({ horarioId: activeHorario.id, duracionMin, modalidad });
     navigation.navigate('CourtBookingConfirmation', {
       horarioId: activeHorario.id,
       duracionMin,
@@ -153,8 +159,55 @@ export function CourtBookingScreen({ navigation, route }: Props) {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
-        <PrimaryButton label="Reservar cancha" onPress={reservar} />
+        <PrimaryButton label="Reservar cancha" onPress={() => setConfirmModalOpen(true)} />
       </View>
+
+      <Modal
+        visible={confirmModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmModalOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setConfirmModalOpen(false)}>
+          <Pressable style={styles.confirmCard} onPress={() => {}}>
+            <View style={styles.handle} />
+            <Text style={styles.confirmTitle}>¿Reservar esta cancha?</Text>
+
+            <View style={styles.confirmInfoList}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Cancha</Text>
+                <Text style={styles.infoValue}>{cancha.nombre}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Fecha</Text>
+                <Text style={styles.infoValue}>
+                  {formatFullDate(activeHorario.fecha)} · {activeHorario.hora}
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Duración</Text>
+                <Text style={styles.infoValue}>{duracionMin} min</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Modalidad</Text>
+                <Text style={styles.infoValue}>{modalidad}</Text>
+              </View>
+              <View style={[styles.infoRow, styles.infoRowLast]}>
+                <Text style={styles.infoLabelStrong}>Total</Text>
+                <Text style={styles.infoValueStrong}>${total}</Text>
+              </View>
+            </View>
+
+            <View style={styles.confirmActions}>
+              <View style={styles.confirmActionItem}>
+                <OutlineButton label="Cancelar" onPress={() => setConfirmModalOpen(false)} />
+              </View>
+              <View style={styles.confirmActionItem}>
+                <PrimaryButton label="Confirmar reserva" onPress={reservar} />
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -330,5 +383,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  backdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(43, 36, 32, 0.4)',
+  },
+  confirmCard: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
+    gap: 16,
+  },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.borderStrong,
+  },
+  confirmTitle: {
+    fontFamily: fontFamily.body,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.lg,
+    color: colors.textPrimary,
+  },
+  confirmInfoList: {
+    borderRadius: radius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmActionItem: {
+    flex: 1,
   },
 });

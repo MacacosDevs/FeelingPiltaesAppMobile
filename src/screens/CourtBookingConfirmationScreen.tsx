@@ -1,9 +1,11 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CheckIcon } from 'react-native-heroicons/outline';
+import QRCode from 'react-native-qrcode-svg';
 import { canchaById, horarioById, horarios } from '../data/canchas';
+import { useAuth } from '../context/AuthContext';
 import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
@@ -12,8 +14,11 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CourtBookingConfirmatio
 
 export function CourtBookingConfirmationScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const [qrModalOpen, setQrModalOpen] = useState(false);
   const activeHorario = horarioById(route.params.horarioId) ?? horarios[0];
   const cancha = canchaById(activeHorario.canchaId);
+  const qrValue = `FEELINGPADEL|${activeHorario.id}|${user?.correo ?? ''}`;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -44,12 +49,34 @@ export function CourtBookingConfirmationScreen({ navigation, route }: Props) {
           </View>
         </View>
 
+        <View style={styles.qrCard}>
+          <Text style={styles.qrText}>
+            Muestra este código en la recepción para registrar tu asistencia.
+          </Text>
+          <Pressable style={styles.qrWrap} onPress={() => setQrModalOpen(true)}>
+            <QRCode value={qrValue} size={140} />
+          </Pressable>
+          <Text style={styles.qrHint}>Toca para ampliar</Text>
+        </View>
+
         <Pressable
           style={styles.link}
           onPress={() => navigation.navigate('Main', { screen: 'Account' })}>
           <Text style={styles.linkLabel}>Ver mis reservas</Text>
         </Pressable>
       </View>
+
+      <Modal
+        visible={qrModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQrModalOpen(false)}>
+        <Pressable style={styles.qrBackdrop} onPress={() => setQrModalOpen(false)}>
+          <View style={styles.qrModalCard}>
+            <QRCode value={qrValue} size={260} />
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -107,6 +134,43 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
     fontSize: fontSize.base,
     color: colors.textPrimary,
+  },
+  qrCard: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 14,
+    padding: 20,
+    borderRadius: radius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  qrText: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.base,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  qrWrap: {
+    padding: 12,
+    borderRadius: radius.input,
+    backgroundColor: colors.background,
+  },
+  qrHint: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  qrBackdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(43, 36, 32, 0.7)',
+  },
+  qrModalCard: {
+    padding: 24,
+    borderRadius: radius.input,
+    backgroundColor: colors.background,
   },
   link: {
     marginTop: 'auto',

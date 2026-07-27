@@ -1,13 +1,17 @@
 import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PencilSquareIcon, Squares2X2Icon } from 'react-native-heroicons/outline';
+import { Avatar } from '../components/Avatar';
 import { OutlineButton } from '../components/OutlineButton';
 import { useAuth } from '../context/AuthContext';
+import { useCourtReservations } from '../context/CourtReservationsContext';
 import { resolveMediaUrl } from '../utils/media';
+import { canchaById, horarioById } from '../data/canchas';
+import { formatShortDate } from '../utils/date';
 import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 
@@ -16,10 +20,8 @@ type PadelAccountNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
-
-// No existe todavía un backend de paquetes/reservas de padel; se muestran
-// como contenido de referencia hasta que esa API exista (mismo criterio que
+// No existe todavía un backend de paquetes de padel; se muestra como
+// contenido de referencia hasta que esa API exista (mismo criterio que
 // AccountScreen.tsx del lado Pilates).
 const paquete = {
   nombre: '10 horas · Canchas',
@@ -28,16 +30,21 @@ const paquete = {
   progreso: 0.6,
 };
 
-const historial = [
-  { cancha: 'Cancha 3 - Panorámica', fecha: '28 jun' },
-  { cancha: 'Cancha 1 - Cristal', fecha: '24 jun' },
-  { cancha: 'Cancha 2 - Techada', fecha: '20 jun' },
-];
-
 export function PadelAccountScreen() {
   const { user, logout, photoVersion } = useAuth();
   const navigation = useNavigation<PadelAccountNavigationProp>();
+  const { reservations } = useCourtReservations();
   const avatarUri = resolveMediaUrl(user?.fotoUrl, photoVersion);
+
+  // El historial se arma a partir de las canchas reservadas en esta sesión
+  // (no existe todavía un backend de reservas que las persista).
+  const historial = reservations
+    .map(reservation => {
+      const horario = horarioById(reservation.horarioId);
+      const cancha = horario ? canchaById(horario.canchaId) : undefined;
+      return horario && cancha ? { reservation, horario, cancha } : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => !!item);
 
   return (
     <SafeAreaView style={styles.screen} edges={[]}>
@@ -45,10 +52,7 @@ export function PadelAccountScreen() {
         <View style={styles.profileSection}>
           <View style={styles.profileRow}>
             <View style={styles.avatarRing}>
-              <Image
-                source={avatarUri ? { uri: avatarUri } : avatarPlaceholder}
-                style={styles.avatar}
-              />
+              <Avatar uri={avatarUri} name={user?.nombre} size={60} />
             </View>
             <View style={styles.profileText}>
               <Text style={styles.name}>{user?.nombre ?? ''}</Text>
@@ -77,24 +81,37 @@ export function PadelAccountScreen() {
 
         <View>
           <Text style={styles.sectionLabel}>Historial</Text>
-          <View style={styles.historyCard}>
-            {historial.map((item, index) => (
-              <View
-                key={item.cancha}
-                style={[
-                  styles.historyRow,
-                  index === historial.length - 1 && styles.historyRowLast,
-                ]}>
-                <View style={styles.historyClaseRow}>
-                  <View style={styles.historyIconWrap}>
-                    <Squares2X2Icon color={colors.accent} size={16} />
+          {historial.length === 0 ? (
+            <View style={styles.historyEmpty}>
+              <Text style={styles.historyEmptyText}>Aún no has reservado ninguna cancha.</Text>
+            </View>
+          ) : (
+            <View style={styles.historyCard}>
+              {historial.map(({ reservation, horario, cancha }, index) => (
+                <Pressable
+                  key={`${reservation.horarioId}-${reservation.duracionMin}-${reservation.modalidad}`}
+                  style={[
+                    styles.historyRow,
+                    index === historial.length - 1 && styles.historyRowLast,
+                  ]}
+                  onPress={() =>
+                    navigation.navigate('CourtBookingConfirmation', {
+                      horarioId: reservation.horarioId,
+                      duracionMin: reservation.duracionMin,
+                      modalidad: reservation.modalidad,
+                    })
+                  }>
+                  <View style={styles.historyClaseRow}>
+                    <View style={styles.historyIconWrap}>
+                      <Squares2X2Icon color={colors.accent} size={16} />
+                    </View>
+                    <Text style={styles.historyClase}>{cancha.nombre}</Text>
                   </View>
-                  <Text style={styles.historyClase}>{item.cancha}</Text>
-                </View>
-                <Text style={styles.historyFecha}>{item.fecha}</Text>
-              </View>
-            ))}
-          </View>
+                  <Text style={styles.historyFecha}>{formatShortDate(horario.fecha)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.logoutSection}>
@@ -129,11 +146,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.accentSoft,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.pill,
   },
   profileText: {
     flex: 1,
@@ -219,6 +231,21 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
+  },
+  historyEmpty: {
+    borderRadius: radius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  historyEmptyText: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.base,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   historyCard: {
     backgroundColor: colors.surface,

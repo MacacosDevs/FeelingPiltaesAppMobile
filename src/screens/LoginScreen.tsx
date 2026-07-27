@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, FieldError, Input, Spinner } from 'heroui-native';
+import { Button, FieldError, Input } from 'heroui-native';
+import { FullScreenLoader } from '../components/FullScreenLoader';
 import { GoogleIcon } from '../components/GoogleIcon';
+import { PasswordField } from '../components/PasswordField';
 import { useAuth } from '../context/AuthContext';
-import { ApiError } from '../api/client';
+import { mapAuthError } from '../utils/authErrors';
+import { validarContrasena, validarCorreo } from '../utils/validation';
 import { colors, fontFamily, fontSize, fontWeight } from '../theme';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -14,21 +17,48 @@ const logoFull = require('../assets/images/logo-full.png');
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
-  const { login } = useAuth();
+  const { login, loginConGoogle } = useAuth();
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [correoError, setCorreoError] = useState<string | null>(null);
+  const [contrasenaError, setContrasenaError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const isBusy = loading || googleLoading;
 
   const handleContinuar = async () => {
     setError(null);
+    const errorCorreo = validarCorreo(correo);
+    const errorContrasena = validarContrasena(contrasena);
+    setCorreoError(errorCorreo);
+    setContrasenaError(errorContrasena);
+    if (errorCorreo || errorContrasena) {
+      return;
+    }
+
     setLoading(true);
     try {
       await login(correo, contrasena);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado');
+      const errores = mapAuthError(e, 'login');
+      setCorreoError(errores.correoError);
+      setContrasenaError(errores.contrasenaError);
+      setError(errores.general);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      await loginConGoogle();
+    } catch (e) {
+      setError(mapAuthError(e, 'login').general ?? 'No se pudo iniciar sesión con Google');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -42,37 +72,40 @@ export function LoginScreen({ navigation }: Props) {
           Ingresa tu correo electrónico para iniciar sesión.
         </Text>
 
-        <Input
-          value={correo}
-          onChangeText={text => {
-            setCorreo(text);
-            setError(null);
-          }}
-          placeholder="Ingresa tu correo electrónico"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          isInvalid={!!error}
-        />
-        <Input
+        <View>
+          <Input
+            value={correo}
+            onChangeText={text => {
+              setCorreo(text);
+              setCorreoError(null);
+              setError(null);
+            }}
+            placeholder="Ingresa tu correo electrónico"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            isInvalid={!!correoError || !!error}
+            isDisabled={isBusy}
+          />
+          {correoError && <FieldError isInvalid>{correoError}</FieldError>}
+        </View>
+
+        <PasswordField
           value={contrasena}
           onChangeText={text => {
             setContrasena(text);
+            setContrasenaError(null);
             setError(null);
           }}
           placeholder="Contraseña"
-          secureTextEntry
-          autoCapitalize="none"
-          isInvalid={!!error}
+          isInvalid={!!contrasenaError || !!error}
+          isDisabled={isBusy}
+          errorMessage={contrasenaError}
         />
 
         {error && <FieldError isInvalid>{error}</FieldError>}
 
-        <Button isDisabled={loading} onPress={handleContinuar} className="bg-[#2b2420]">
-          {loading ? (
-            <Spinner size="sm" color="#fbf7f3" />
-          ) : (
-            <Button.Label className="text-[#fbf7f3]">Continuar</Button.Label>
-          )}
+        <Button isDisabled={isBusy} onPress={handleContinuar} className="bg-[#2b2420]">
+          <Button.Label className="text-[#fbf7f3]">Continuar</Button.Label>
         </Button>
 
         <View style={styles.switchRow}>
@@ -84,11 +117,17 @@ export function LoginScreen({ navigation }: Props) {
 
         <Text style={styles.dividerText}>O continúa con:</Text>
 
-        <Button variant="outline" className="justify-start border-[#ede6de] bg-white">
+        <Button
+          variant="outline"
+          className="justify-center border-[#ede6de] bg-white"
+          isDisabled={isBusy}
+          onPress={handleGoogle}>
           <GoogleIcon size={18} />
           <Button.Label className="text-[#2b2420]">Continuar con Google</Button.Label>
         </Button>
       </View>
+
+      {isBusy && <FullScreenLoader />}
     </SafeAreaView>
   );
 }

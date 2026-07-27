@@ -1,16 +1,21 @@
 import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PencilSquareIcon } from 'react-native-heroicons/outline';
+import { Avatar } from '../components/Avatar';
 import { OutlineButton } from '../components/OutlineButton';
 import { useAuth } from '../context/AuthContext';
 import { resolveMediaUrl } from '../utils/media';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { useSportMode } from '../context/SportModeContext';
+import { useReservations } from '../context/ReservationsContext';
 import { PadelAccountScreen } from './PadelAccountScreen';
+import { paquetesActivos } from '../data/paquete';
+import { clases } from '../data/clases';
+import { formatShortDate } from '../utils/date';
 import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 
@@ -19,29 +24,18 @@ type AccountNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
-
-// El paquete y el historial de clases todavía no existen en el backend
-// (no hay módulo de paquetes/reservas); se muestran como contenido de
-// referencia hasta que esa API exista.
-const paquete = {
-  nombre: '8 clases · Roma',
-  restantes: 6,
-  expiraEl: '19 de marzo',
-  progreso: 0.75,
-};
-
-const historial = [
-  { clase: 'Reformer', fecha: '28 jun' },
-  { clase: 'Barre Sculpt', fecha: '24 jun' },
-  { clase: 'Mat Pilates', fecha: '20 jun' },
-];
-
 export function AccountScreen() {
   const { user, logout, photoVersion } = useAuth();
   const navigation = useNavigation<AccountNavigationProp>();
   const { sport } = useSportMode();
+  const { reservedClaseIds } = useReservations();
   const avatarUri = resolveMediaUrl(user?.fotoUrl, photoVersion);
+
+  // El historial se arma a partir de las clases reservadas en esta sesión
+  // (no existe todavía un backend de reservas que las persista).
+  const historial = reservedClaseIds
+    .map(claseId => clases.find(clase => clase.id === claseId))
+    .filter((clase): clase is (typeof clases)[number] => !!clase);
 
   if (sport === 'padel') {
     return <PadelAccountScreen />;
@@ -53,10 +47,7 @@ export function AccountScreen() {
         <View style={styles.profileSection}>
           <View style={styles.profileRow}>
             <View style={styles.avatarRing}>
-              <Image
-                source={avatarUri ? { uri: avatarUri } : avatarPlaceholder}
-                style={styles.avatar}
-              />
+              <Avatar uri={avatarUri} name={user?.nombre} size={60} />
             </View>
             <View style={styles.profileText}>
               <Text style={styles.name}>{user?.nombre ?? ''}</Text>
@@ -72,43 +63,56 @@ export function AccountScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.packageCard}>
-          <Text style={styles.packageName}>{paquete.nombre}</Text>
-          <Text style={styles.packageMeta}>
-            <Text style={styles.packageRestantes}>{paquete.restantes} restantes</Text>
-            <Text style={styles.packageExpira}> · expira el {paquete.expiraEl}</Text>
-          </Text>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${paquete.progreso * 100}%` }]} />
-          </View>
-        </View>
+        {(['pilates', 'bacufit'] as const).map(categoria => {
+          const paquete = paquetesActivos[categoria];
+          if (!paquete) return null;
+          return (
+            <View key={categoria} style={styles.packageCard}>
+              <Text style={styles.packageName}>{paquete.nombre}</Text>
+              <Text style={styles.packageMeta}>
+                <Text style={styles.packageRestantes}>{paquete.restantes} restantes</Text>
+                <Text style={styles.packageExpira}> · expira el {paquete.expiraEl}</Text>
+              </Text>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${paquete.progreso * 100}%` }]} />
+              </View>
+            </View>
+          );
+        })}
 
         <View>
           <Text style={styles.sectionLabel}>Historial</Text>
-          <View style={styles.historyCard}>
-            {historial.map((item, index) => {
-              const meta = ACTIVITY_META[item.clase];
-              const Icon = meta?.Icon;
-              return (
-                <View
-                  key={item.clase}
-                  style={[
-                    styles.historyRow,
-                    index === historial.length - 1 && styles.historyRowLast,
-                  ]}>
-                  <View style={styles.historyClaseRow}>
-                    {Icon && (
-                      <View style={[styles.historyIconWrap, { backgroundColor: `${meta.color}1f` }]}>
-                        <Icon color={meta.color} size={16} />
-                      </View>
-                    )}
-                    <Text style={styles.historyClase}>{item.clase}</Text>
-                  </View>
-                  <Text style={styles.historyFecha}>{item.fecha}</Text>
-                </View>
-              );
-            })}
-          </View>
+          {historial.length === 0 ? (
+            <View style={styles.historyEmpty}>
+              <Text style={styles.historyEmptyText}>Aún no has reservado ninguna clase.</Text>
+            </View>
+          ) : (
+            <View style={styles.historyCard}>
+              {historial.map((clase, index) => {
+                const meta = ACTIVITY_META[clase.nombre];
+                const Icon = meta?.Icon;
+                return (
+                  <Pressable
+                    key={clase.id}
+                    style={[
+                      styles.historyRow,
+                      index === historial.length - 1 && styles.historyRowLast,
+                    ]}
+                    onPress={() => navigation.navigate('ClassDetail', { claseId: clase.id })}>
+                    <View style={styles.historyClaseRow}>
+                      {Icon && (
+                        <View style={[styles.historyIconWrap, { backgroundColor: `${meta.color}1f` }]}>
+                          <Icon color={meta.color} size={16} />
+                        </View>
+                      )}
+                      <Text style={styles.historyClase}>{clase.nombre}</Text>
+                    </View>
+                    <Text style={styles.historyFecha}>{formatShortDate(clase.fecha)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         <View style={styles.logoutSection}>
@@ -143,11 +147,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.accentSoft,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.pill,
   },
   profileText: {
     flex: 1,
@@ -233,6 +232,21 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
+  },
+  historyEmpty: {
+    borderRadius: radius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  historyEmptyText: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.base,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   historyCard: {
     backgroundColor: colors.surface,

@@ -14,3 +14,10 @@ export function registrar(correo: string, contrasena: string, nombre: string): P
     body: JSON.stringify({ correo, contrasena, nombre }),
   });
 }
+
+export function loginConGoogle(idToken: string): Promise<TokenResponse> {
+  return apiFetch<TokenResponse>('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}

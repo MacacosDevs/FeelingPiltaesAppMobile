@@ -42,7 +42,7 @@ const padelNavItems: readonly NavItem[] = [
   { key: 'Canchas', route: 'Clases', outline: Squares2X2IconOutline, solid: Squares2X2IconSolid },
   { key: 'Paquetes', route: 'Paquetes', outline: CubeIconOutline, solid: CubeIconSolid },
   { key: 'Eventos', route: 'Eventos', outline: TicketIconOutline, solid: TicketIconSolid },
-  { key: 'Menú', route: 'Account', outline: UserCircleIconOutline, solid: UserCircleIconSolid },
+  { key: 'Mi cuenta', route: 'Account', outline: UserCircleIconOutline, solid: UserCircleIconSolid },
 ];
 
 export function BottomNavBar({ state, navigation }: BottomTabBarProps) {

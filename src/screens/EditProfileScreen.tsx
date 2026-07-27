@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,13 +15,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { XMarkIcon, CameraIcon } from 'react-native-heroicons/outline';
 import { TextField } from '../components/TextField';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { Avatar } from '../components/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { resolveMediaUrl } from '../utils/media';
 import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import type { RootStackParamList } from '../navigation/types';
-
-const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfile'>;
 
@@ -94,14 +92,7 @@ export function EditProfileScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <Pressable style={styles.avatarWrap} onPress={elegirFoto} disabled={uploadingPhoto}>
             <View style={styles.avatarRing}>
-              <Image
-                source={
-                  resolveMediaUrl(user?.fotoUrl, photoVersion)
-                    ? { uri: resolveMediaUrl(user?.fotoUrl, photoVersion)! }
-                    : avatarPlaceholder
-                }
-                style={styles.avatar}
-              />
+              <Avatar uri={resolveMediaUrl(user?.fotoUrl, photoVersion)} name={user?.nombre} size={96} />
               <View style={styles.cameraBadge}>
                 <CameraIcon color={colors.background} size={14} />
               </View>
@@ -198,11 +189,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.accentSoft,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
   },
   cameraBadge: {
     position: 'absolute',
