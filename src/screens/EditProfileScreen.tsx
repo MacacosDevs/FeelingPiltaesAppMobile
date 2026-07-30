@@ -19,7 +19,7 @@ import { Avatar } from '../components/Avatar';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { resolveMediaUrl } from '../utils/media';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfile'>;
@@ -76,7 +76,7 @@ export function EditProfileScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={commonStyles.screen} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Editar perfil</Text>
         <Pressable
@@ -139,10 +139,6 @@ export function EditProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   flex: {
     flex: 1,
   },

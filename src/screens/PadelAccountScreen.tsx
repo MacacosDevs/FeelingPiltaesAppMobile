@@ -12,7 +12,7 @@ import { useCourtReservations } from '../context/CourtReservationsContext';
 import { resolveMediaUrl } from '../utils/media';
 import { canchaById, horarioById } from '../data/canchas';
 import { formatShortDate } from '../utils/date';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 
 type PadelAccountNavigationProp = CompositeNavigationProp<
@@ -47,7 +47,7 @@ export function PadelAccountScreen() {
     .filter((item): item is NonNullable<typeof item> => !!item);
 
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileSection}>
           <View style={styles.profileRow}>
@@ -123,10 +123,6 @@ export function PadelAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   content: {
     paddingHorizontal: 24,
     paddingTop: 24,
@@ -188,11 +184,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.input,
     padding: 18,
     gap: 6,
-    shadowColor: colors.textPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    elevation: 4,
+    ...shadows.elevatedCard,
   },
   packageName: {
     fontFamily: fontFamily.body,
@@ -253,11 +245,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 16,
-    shadowColor: '#2b2420',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    ...shadows.subtleCard,
   },
   historyRow: {
     flexDirection: 'row',

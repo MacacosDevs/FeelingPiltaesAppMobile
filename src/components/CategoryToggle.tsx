@@ -1,7 +1,7 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Categoria } from '../data/clases';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 
 type CategoryToggleProps = {
   value: Categoria;
@@ -41,17 +41,7 @@ const styles = StyleSheet.create({
   },
   optionActive: {
     backgroundColor: colors.textPrimary,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    ...shadows.pill,
   },
   label: {
     fontFamily: fontFamily.body,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Input, FieldError } from 'heroui-native';
 import { EyeIcon, EyeSlashIcon } from 'react-native-heroicons/outline';
 import { colors } from '../theme';
@@ -35,6 +35,7 @@ export function PasswordField({
           isInvalid={isInvalid}
           isDisabled={isDisabled}
           className="pr-12"
+          style={styles.input}
         />
         <Pressable
           className="absolute right-3 top-0 bottom-0 justify-center"
@@ -51,3 +52,10 @@ export function PasswordField({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  input: {
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+});

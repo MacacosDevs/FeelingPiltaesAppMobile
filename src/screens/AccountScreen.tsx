@@ -6,6 +6,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PencilSquareIcon } from 'react-native-heroicons/outline';
 import { Avatar } from '../components/Avatar';
+import { GuestPrompt } from '../components/GuestPrompt';
 import { OutlineButton } from '../components/OutlineButton';
 import { useAuth } from '../context/AuthContext';
 import { resolveMediaUrl } from '../utils/media';
@@ -13,10 +14,12 @@ import { ACTIVITY_META } from '../utils/activityMeta';
 import { useSportMode } from '../context/SportModeContext';
 import { useReservations } from '../context/ReservationsContext';
 import { PadelAccountScreen } from './PadelAccountScreen';
-import { paquetesActivos } from '../data/paquete';
+import { paqueteActivoDe, useMisCompras, useMisPaquetesActivos } from '../hooks/useMisPaquetesActivos';
 import { clases } from '../data/clases';
-import { formatShortDate } from '../utils/date';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { formatDayMonth, formatShortDate } from '../utils/date';
+import { formatPrecio } from '../utils/money';
+import type { CompraResponse } from '../api/types';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 
 type AccountNavigationProp = CompositeNavigationProp<
@@ -24,12 +27,21 @@ type AccountNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
+const ESTADO_COMPRA_META: Record<CompraResponse['estado'], { label: string; color: string }> = {
+  pagada: { label: 'Pagado', color: colors.spotsAvailable },
+  pendiente: { label: 'Pendiente', color: colors.gold },
+  fallida: { label: 'Fallido', color: colors.error },
+  cancelada: { label: 'Cancelado', color: colors.error },
+};
+
 export function AccountScreen() {
   const { user, logout, photoVersion } = useAuth();
   const navigation = useNavigation<AccountNavigationProp>();
   const { sport } = useSportMode();
   const { reservedClaseIds } = useReservations();
   const avatarUri = resolveMediaUrl(user?.fotoUrl, photoVersion);
+  const paquetesActivos = useMisPaquetesActivos();
+  const compras = useMisCompras();
 
   // El historial se arma a partir de las clases reservadas en esta sesión
   // (no existe todavía un backend de reservas que las persista).
@@ -37,12 +49,25 @@ export function AccountScreen() {
     .map(claseId => clases.find(clase => clase.id === claseId))
     .filter((clase): clase is (typeof clases)[number] => !!clase);
 
+  if (!user) {
+    return (
+      <SafeAreaView style={commonStyles.screen} edges={[]}>
+        <GuestPrompt
+          title="Inicia sesión para ver tu cuenta"
+          subtitle="Consulta tus paquetes, tu historial de reservas y edita tu perfil."
+          onLogin={() => navigation.navigate('Auth', { mode: 'login' })}
+          onRegister={() => navigation.navigate('Auth', { mode: 'register' })}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (sport === 'padel') {
     return <PadelAccountScreen />;
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileSection}>
           <View style={styles.profileRow}>
@@ -64,17 +89,26 @@ export function AccountScreen() {
         </View>
 
         {(['pilates', 'bacufit'] as const).map(categoria => {
-          const paquete = paquetesActivos[categoria];
+          const paquete = paqueteActivoDe(paquetesActivos, categoria);
           if (!paquete) return null;
+
+          const inicio = new Date(paquete.fechaInicio).getTime();
+          const expiracion = new Date(paquete.fechaExpiracion).getTime();
+          const progreso =
+            expiracion > inicio
+              ? Math.min(1, Math.max(0, (Date.now() - inicio) / (expiracion - inicio)))
+              : 0;
+
           return (
             <View key={categoria} style={styles.packageCard}>
               <Text style={styles.packageName}>{paquete.nombre}</Text>
               <Text style={styles.packageMeta}>
-                <Text style={styles.packageRestantes}>{paquete.restantes} restantes</Text>
-                <Text style={styles.packageExpira}> · expira el {paquete.expiraEl}</Text>
+                <Text style={styles.packageRestantes}>
+                  Vence el {formatDayMonth(new Date(paquete.fechaExpiracion))}
+                </Text>
               </Text>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${paquete.progreso * 100}%` }]} />
+                <View style={[styles.progressFill, { width: `${progreso * 100}%` }]} />
               </View>
             </View>
           );
@@ -115,6 +149,40 @@ export function AccountScreen() {
           )}
         </View>
 
+        <View>
+          <Text style={styles.sectionLabel}>Historial de pagos</Text>
+          {compras.length === 0 ? (
+            <View style={styles.historyEmpty}>
+              <Text style={styles.historyEmptyText}>Aún no has comprado ningún paquete.</Text>
+            </View>
+          ) : (
+            <View style={styles.historyCard}>
+              {compras.map((compra, index) => {
+                const estadoMeta = ESTADO_COMPRA_META[compra.estado];
+                return (
+                  <View
+                    key={compra.id}
+                    style={[
+                      styles.historyRow,
+                      index === compras.length - 1 && styles.historyRowLast,
+                    ]}>
+                    <View style={styles.paymentInfo}>
+                      <Text style={styles.historyClase}>{compra.paqueteNombre}</Text>
+                      <Text style={styles.paymentFecha}>
+                        {formatDayMonth(new Date(compra.creadoEn))} ·{' '}
+                        {formatPrecio(compra.montoCentavos)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.paymentEstado, { color: estadoMeta.color }]}>
+                      {estadoMeta.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
         <View style={styles.logoutSection}>
           <OutlineButton label="Cerrar sesión" onPress={logout} />
         </View>
@@ -124,10 +192,6 @@ export function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   content: {
     paddingHorizontal: 24,
     paddingTop: 24,
@@ -189,11 +253,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.input,
     padding: 18,
     gap: 6,
-    shadowColor: colors.textPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    elevation: 4,
+    ...shadows.elevatedCard,
   },
   packageName: {
     fontFamily: fontFamily.body,
@@ -208,9 +268,6 @@ const styles = StyleSheet.create({
   packageRestantes: {
     color: colors.accent,
     fontWeight: fontWeight.medium,
-  },
-  packageExpira: {
-    color: colors.navInactive,
   },
   progressTrack: {
     height: 4,
@@ -254,11 +311,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 16,
-    shadowColor: '#2b2420',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    ...shadows.subtleCard,
   },
   historyRow: {
     flexDirection: 'row',
@@ -292,6 +345,19 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.body,
     fontSize: fontSize.base,
     color: colors.textMuted,
+  },
+  paymentInfo: {
+    gap: 2,
+  },
+  paymentFecha: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.smMedium,
+    color: colors.textMuted,
+  },
+  paymentEstado: {
+    fontFamily: fontFamily.body,
+    fontWeight: fontWeight.medium,
+    fontSize: fontSize.base,
   },
   logoutSection: {
     marginTop: 8,

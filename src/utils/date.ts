@@ -90,6 +90,10 @@ export function formatShortDate(date: Date): string {
   return `${date.getDate()} ${month}`;
 }
 
+export function formatDayMonth(date: Date): string {
+  return `${date.getDate()} de ${MONTH_LABELS[date.getMonth()].toLowerCase()}`;
+}
+
 // Convierte una hora tipo "8:00 am" / "11:30 pm" a { hours, minutes } en
 // formato 24 horas.
 export function parseHora(hora: string): { hours: number; minutes: number } {

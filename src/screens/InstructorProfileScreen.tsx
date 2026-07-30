@@ -5,7 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon, StarIcon } from 'react-native-heroicons/outline';
 import { clases, INSTRUCTOR_META, stripCon } from '../data/clases';
 import { ACTIVITY_META } from '../utils/activityMeta';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { WEEKDAY_LABELS, addDays, mondayOf, startOfDay, weekdayIndexMondayFirst } from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -28,7 +28,7 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
   }, [instructora]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={commonStyles.screen} edges={['top']}>
       <View style={styles.header}>
         <Pressable style={styles.backBtn} hitSlop={8} onPress={() => navigation.goBack()}>
           <ChevronLeftIcon color={colors.textPrimary} size={22} />
@@ -99,10 +99,6 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     height: 52,
     justifyContent: 'center',

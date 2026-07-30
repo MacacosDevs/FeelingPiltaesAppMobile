@@ -1,17 +1,19 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Brand } from './Brand';
-import { useSportMode } from '../context/SportModeContext';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+// import { useSportMode } from '../context/SportModeContext';
+import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 
 export function TopBar() {
-  const { sport, setSport } = useSportMode();
+  // Padel todavía no sale en este lanzamiento: switcher comentado, no
+  // borrado. Para reactivarlo, descomentar este hook y el bloque de abajo.
+  // const { sport, setSport } = useSportMode();
 
   return (
     <View style={styles.topBar}>
       <Brand label="Feeling Pilates" />
 
-      <View style={styles.switcher}>
+      {/* <View style={styles.switcher}>
         <Pressable
           style={[styles.switchOption, sport === 'pilates' && styles.switchOptionActive]}
           onPress={() => setSport('pilates')}>
@@ -26,7 +28,7 @@ export function TopBar() {
             Padel
           </Text>
         </Pressable>
-      </View>
+      </View> */}
     </View>
   );
 }
@@ -40,17 +42,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     backgroundColor: colors.surface,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    ...shadows.header,
   },
   switcher: {
     flexDirection: 'row',
@@ -66,17 +58,7 @@ const styles = StyleSheet.create({
   },
   switchOptionActive: {
     backgroundColor: colors.textPrimary,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    ...shadows.pill,
   },
   switchLabel: {
     fontFamily: fontFamily.body,

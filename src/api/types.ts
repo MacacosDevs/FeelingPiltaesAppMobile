@@ -43,3 +43,37 @@ export type ActualizarPerfilRequest = {
   fotoUrl: string | null;
   descripcion: string | null;
 };
+
+export type PaqueteResponse = {
+  id: string;
+  categoria: 'pilates' | 'bacu_fit' | 'combo';
+  nombre: string;
+  descripcion: string | null;
+  precioCentavos: number;
+  vigenciaDias: number;
+  unitarioTexto: string | null;
+  destacado: boolean;
+};
+
+export type PaqueteActivoResponse = {
+  categoria: 'pilates' | 'bacu_fit';
+  nombre: string;
+  fechaInicio: string;
+  fechaExpiracion: string;
+};
+
+export type CompraResponse = {
+  id: string;
+  paqueteNombre: string;
+  categoria: 'pilates' | 'bacu_fit' | 'combo';
+  montoCentavos: number;
+  estado: 'pendiente' | 'pagada' | 'fallida' | 'cancelada';
+  creadoEn: string;
+  fechaExpiracion: string | null;
+};
+
+export type CrearPagoResponse = {
+  compraId: string;
+  clientSecret: string;
+  publishableKey: string;
+};

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -8,7 +8,7 @@ import { ChevronRightIcon, FunnelIcon, Squares2X2Icon } from 'react-native-heroi
 import { ClassFilterModal, type FilterOption } from '../components/ClassFilterModal';
 import { CalendarModal } from '../components/CalendarModal';
 import { canchaById, canchas, horarios, isHorarioPast } from '../data/canchas';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import {
   WEEKDAY_LABELS,
   addDays,
@@ -102,7 +102,7 @@ export function CourtsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.body}>
         <Text style={styles.title}>Canchas</Text>
 
@@ -233,10 +233,6 @@ export function CourtsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   body: {
     padding: 20,
     gap: 14,
@@ -381,17 +377,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    ...shadows.listCard,
   },
   courtCardPast: {
     opacity: 0.55,

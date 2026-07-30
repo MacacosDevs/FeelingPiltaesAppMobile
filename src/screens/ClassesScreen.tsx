@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -10,11 +10,11 @@ import { CalendarModal } from '../components/CalendarModal';
 import { CategoryToggle } from '../components/CategoryToggle';
 import { CapacityIndicator } from '../components/CapacityIndicator';
 import { clases, isClasePast, type Categoria } from '../data/clases';
-import { paquetesActivos } from '../data/paquete';
+import { paqueteActivoDe, useMisPaquetesActivos } from '../hooks/useMisPaquetesActivos';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { useSportMode } from '../context/SportModeContext';
 import { CourtsScreen } from './CourtsScreen';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import {
   WEEKDAY_LABELS,
   addDays,
@@ -41,11 +41,6 @@ const SALON_OPTIONS: FilterOption[] = [
 
 const today = startOfDay(new Date());
 
-function tienePaqueteDe(categoria: Categoria): boolean {
-  const paquete = paquetesActivos[categoria];
-  return !!paquete && paquete.restantes > 0;
-}
-
 type ClassesNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Clases'>,
   NativeStackNavigationProp<RootStackParamList>
@@ -61,6 +56,7 @@ export function ClassesScreen() {
   const [selectedSalones, setSelectedSalones] = useState<string[]>([]);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const paquetesActivos = useMisPaquetesActivos();
 
   const activeFilterCount = selectedTipos.length + selectedSalones.length;
   const tipoOptions = categoria === 'pilates' ? TIPO_OPTIONS : [];
@@ -113,7 +109,7 @@ export function ClassesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Horario</Text>
@@ -210,7 +206,7 @@ export function ClassesScreen() {
                     </View>
 
                     <View style={styles.rightCol}>
-                      {!tienePaqueteDe(clase.categoria) && (
+                      {!paqueteActivoDe(paquetesActivos, clase.categoria) && (
                         <Text style={styles.classPrecio}>{clase.precio}</Text>
                       )}
                       {past ? (
@@ -256,10 +252,6 @@ export function ClassesScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   body: {
     padding: 20,
     gap: 14,
@@ -411,17 +403,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    ...shadows.listCard,
   },
   classCardPast: {
     opacity: 0.55,

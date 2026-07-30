@@ -9,8 +9,7 @@ export type MainTabParamList = {
 };
 
 export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Auth: { mode?: 'login' | 'register' } | undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   EditProfile: undefined;
   ClassDetail: { claseId: string };

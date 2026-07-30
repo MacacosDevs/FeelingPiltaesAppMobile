@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PackageCard } from '../components/PackageCard';
-import { colors, fontFamily, fontSize, fontWeight } from '../theme';
+import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
+import { useAuth } from '../context/AuthContext';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '../theme';
+import type { MainTabParamList, RootStackParamList } from '../navigation/types';
+
+type PadelPackagesNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Paquetes'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 // No existe todavía un backend de paquetes/membresías de padel; esta
 // pantalla usa contenido de referencia igual al diseño hasta que esa API
@@ -14,8 +25,18 @@ const paquetes = [
 ];
 
 export function PadelPackagesScreen() {
+  const navigation = useNavigation<PadelPackagesNavigationProp>();
+  const { user } = useAuth();
+  const [authGateOpen, setAuthGateOpen] = useState(false);
+
+  function handleElegirPaquete() {
+    if (!user) {
+      setAuthGateOpen(true);
+    }
+  }
+
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.header}>
           <Text style={styles.title}>Paquetes de horas</Text>
@@ -23,22 +44,28 @@ export function PadelPackagesScreen() {
         </View>
 
         {paquetes.map(paquete => (
-          <PackageCard key={paquete.nombre} {...paquete} />
+          <PackageCard key={paquete.nombre} {...paquete} onPress={handleElegirPaquete} />
         ))}
 
         <Text style={styles.footerNote}>
           Las horas se pueden usar en cualquier cancha y horario disponible.
         </Text>
       </ScrollView>
+
+      <AuthRequiredSheet
+        visible={authGateOpen}
+        message="Necesitas iniciar sesión o crear una cuenta para comprar un paquete."
+        onClose={() => setAuthGateOpen(false)}
+        onLogin={() => {
+          setAuthGateOpen(false);
+          navigation.navigate('Auth', { mode: 'login' });
+        }}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   body: {
     paddingHorizontal: 28,
     paddingVertical: 36,

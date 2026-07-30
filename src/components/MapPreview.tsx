@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Camera, Map, Marker } from '@maplibre/maplibre-react-native';
-import { colors, fontFamily, fontSize, radius } from '../theme';
-
-const OPENFREEMAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { colors, fontFamily, fontSize, radius, shadows } from '../theme';
 
 type MapPreviewProps = {
   query: string;
@@ -17,11 +16,11 @@ type Status = 'loading' | 'ready' | 'error';
 // Geocodifica con Nominatim (OpenStreetMap) — servicio público gratuito sin
 // API key. Respeta su política de uso: máximo ~1 solicitud por segundo (aquí
 // se hace una sola vez por pantalla) e identifica la app en el User-Agent.
-// El mapa en sí usa teselas vectoriales de OpenFreeMap (gratuitas, sin
-// límites de uso ni API key) renderizadas con MapLibre — mapa real e
-// interactivo, no una imagen. Si falla la geocodificación, se cae a un
-// enlace directo a Google Maps en vez de romper la pantalla.
-export function MapPreview({ query, height = 160 }: MapPreviewProps) {
+// El mapa en sí usa Google Maps (Maps SDK for Android, ver
+// src/config/googleMaps.ts) — mapa real e interactivo, no una imagen. Si
+// falla la geocodificación, se cae a un enlace directo a Google Maps en vez
+// de romper la pantalla.
+export function MapPreview({ query, height = 220 }: MapPreviewProps) {
   const [status, setStatus] = useState<Status>('loading');
   const [coords, setCoords] = useState<Coordinates | null>(null);
 
@@ -79,16 +78,37 @@ export function MapPreview({ query, height = 160 }: MapPreviewProps) {
     );
   }
 
-  const center: [number, number] = [coords.lon, coords.lat];
-
   return (
     <View style={[styles.mapWrap, { height }]}>
-      <Map style={styles.map} mapStyle={OPENFREEMAP_STYLE}>
-        <Camera zoom={15} center={center} />
-        <Marker lngLat={center}>
-          <View style={styles.pin} />
+      <MapView
+        provider={PROVIDER_GOOGLE}
+        style={styles.map}
+        initialRegion={{
+          latitude: coords.lat,
+          longitude: coords.lon,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}>
+        <Marker coordinate={{ latitude: coords.lat, longitude: coords.lon }}>
+          <View style={styles.pin}>
+            {/* Marca de Feeling Pilates en SVG en vez de Image: los markers
+                de Google Maps en Android a veces "fotografían" el contenido
+                del marker antes de que una imagen raster termine de
+                decodificar y queda en blanco; un SVG se dibuja de forma
+                síncrona y no tiene ese problema. */}
+            <Svg width={22} height={16} viewBox="0 0 100 64">
+              <Circle cx={50} cy={18} r={17} fill={colors.gold} />
+              <Path
+                d="M14 36 Q50 64 86 36"
+                stroke={colors.textPrimary}
+                strokeWidth={13}
+                strokeLinecap="round"
+                fill="none"
+              />
+            </Svg>
+          </View>
         </Marker>
-      </Map>
+      </MapView>
     </View>
   );
 }
@@ -113,11 +133,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pin: {
-    width: 18,
-    height: 18,
+    width: 32,
+    height: 32,
     borderRadius: radius.pill,
-    borderWidth: 3,
-    borderColor: colors.background,
-    backgroundColor: colors.gold,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.pill,
   },
 });

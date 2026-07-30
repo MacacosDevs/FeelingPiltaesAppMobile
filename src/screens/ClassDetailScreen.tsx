@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon, MapPinIcon, StarIcon } from 'react-native-heroicons/outline';
 import QRCode from 'react-native-qrcode-svg';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { OutlineButton } from '../components/OutlineButton';
+import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
 import { CapacityIndicator } from '../components/CapacityIndicator';
 import { MapPreview } from '../components/MapPreview';
 import { clases, INSTRUCTOR_META, SALON_ADDRESSES, isClasePast, salonGeocodeQuery, stripCon } from '../data/clases';
-import { paquetesActivos } from '../data/paquete';
+import { paqueteActivoDe, useMisPaquetesActivos } from '../hooks/useMisPaquetesActivos';
 import { useAuth } from '../context/AuthContext';
 import { useReservations } from '../context/ReservationsContext';
 import { ACTIVITY_META } from '../utils/activityMeta';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import { formatFullDate } from '../utils/date';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { formatDayMonth, formatFullDate } from '../utils/date';
+import { openDirections } from '../utils/directions';
 import type { RootStackParamList } from '../navigation/types';
 
 const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
@@ -27,12 +29,16 @@ export function ClassDetailScreen({ navigation, route }: Props) {
   const { isReserved, addReservation } = useReservations();
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [authGateOpen, setAuthGateOpen] = useState(false);
 
+  const paquetesActivos = useMisPaquetesActivos();
   const activeClase = clases.find(clase => clase.id === route.params.claseId) ?? clases[0];
+  const esBacuFit = activeClase.categoria === 'bacufit';
+  const reservarLabel = esBacuFit ? 'Reservar Bacu Fit' : 'Reservar clase';
   const reserved = isReserved(activeClase.id);
   const past = isClasePast(activeClase);
-  const paqueteDeLaClase = paquetesActivos[activeClase.categoria];
-  const tienePaquete = !!paqueteDeLaClase && paqueteDeLaClase.restantes > 0;
+  const paqueteDeLaClase = paqueteActivoDe(paquetesActivos, activeClase.categoria);
+  const tienePaquete = !!paqueteDeLaClase;
   const qrValue = `FEELINGPILATES|${activeClase.id}|${user?.correo ?? ''}`;
 
   const activity = ACTIVITY_META[activeClase.nombre];
@@ -42,13 +48,10 @@ export function ClassDetailScreen({ navigation, route }: Props) {
   const locationLabel = address ? `${activeClase.sala} · ${address}` : activeClase.sala;
   const geocodeQuery = salonGeocodeQuery(activeClase.sala);
 
-  function openDirections() {
-    const query = encodeURIComponent(geocodeQuery ?? locationLabel);
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
-  }
+  const directionsQuery = geocodeQuery ?? locationLabel;
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={commonStyles.screen} edges={['top']}>
       <View style={styles.header}>
         <Pressable style={styles.backBtn} hitSlop={8} onPress={() => navigation.goBack()}>
           <ChevronLeftIcon color={colors.textPrimary} size={22} />
@@ -106,7 +109,8 @@ export function ClassDetailScreen({ navigation, route }: Props) {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Paquete</Text>
               <Text style={styles.infoValue}>
-                {paqueteDeLaClase!.nombre} · {paqueteDeLaClase!.restantes} restantes
+                {paqueteDeLaClase!.nombre} · vence el{' '}
+                {formatDayMonth(new Date(paqueteDeLaClase!.fechaExpiracion))}
               </Text>
             </View>
           ) : (
@@ -142,7 +146,7 @@ export function ClassDetailScreen({ navigation, route }: Props) {
             <MapPinIcon color={colors.textMuted} size={16} />
             <Text style={styles.locationText}>{locationLabel}</Text>
           </View>
-          <Pressable onPress={openDirections}>
+          <Pressable onPress={() => openDirections(directionsQuery)}>
             <Text style={styles.directionsLink}>Cómo llegar →</Text>
           </Pressable>
         </View>
@@ -152,17 +156,39 @@ export function ClassDetailScreen({ navigation, route }: Props) {
         <PrimaryButton
           label={
             past
-              ? 'Esta clase ya finalizó'
+              ? esBacuFit
+                ? 'Esta renta ya finalizó'
+                : 'Esta clase ya finalizó'
               : reserved
                 ? 'Reservado ✓'
                 : tienePaquete
-                  ? 'Reservar clase'
-                  : `Reservar clase · ${activeClase.precio}`
+                  ? reservarLabel
+                  : `${reservarLabel} · ${activeClase.precio}`
           }
-          onPress={() => setConfirmModalOpen(true)}
+          onPress={() => {
+            if (!user) {
+              setAuthGateOpen(true);
+              return;
+            }
+            setConfirmModalOpen(true);
+          }}
           disabled={past || reserved}
         />
       </View>
+
+      <AuthRequiredSheet
+        visible={authGateOpen}
+        message={
+          activeClase.categoria === 'bacufit'
+            ? 'Necesitas iniciar sesión o crear una cuenta para reservar esta renta de Bacu Fit.'
+            : 'Necesitas iniciar sesión o crear una cuenta para reservar esta clase.'
+        }
+        onClose={() => setAuthGateOpen(false)}
+        onLogin={() => {
+          setAuthGateOpen(false);
+          navigation.navigate('Auth', { mode: 'login' });
+        }}
+      />
 
       <Modal
         visible={confirmModalOpen}
@@ -172,11 +198,13 @@ export function ClassDetailScreen({ navigation, route }: Props) {
         <Pressable style={styles.backdrop} onPress={() => setConfirmModalOpen(false)}>
           <Pressable style={styles.confirmCard} onPress={() => {}}>
             <View style={styles.handle} />
-            <Text style={styles.confirmTitle}>¿Reservar esta clase?</Text>
+            <Text style={styles.confirmTitle}>
+              ¿Reservar esta {esBacuFit ? 'renta de Bacu Fit' : 'clase'}?
+            </Text>
 
             <View style={styles.confirmInfoList}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Clase</Text>
+                <Text style={styles.infoLabel}>{esBacuFit ? 'Bacu Fit' : 'Clase'}</Text>
                 <Text style={styles.infoValue}>{activeClase.nombre}</Text>
               </View>
               <View style={styles.infoRow}>
@@ -233,10 +261,6 @@ export function ClassDetailScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     height: 52,
     justifyContent: 'center',

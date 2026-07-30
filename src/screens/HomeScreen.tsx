@@ -15,7 +15,7 @@ import { OutlineButton } from '../components/OutlineButton';
 import { HeroCarousel, type HeroSlide } from '../components/HeroCarousel';
 import { useSportMode } from '../context/SportModeContext';
 import { PadelHomeScreen } from './PadelHomeScreen';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import type { MainTabParamList } from '../navigation/types';
 
 type HomeNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>;
@@ -102,7 +102,7 @@ export function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
         <HeroCarousel slides={heroSlides} />
 
@@ -186,10 +186,6 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   scrollBody: {
     paddingBottom: 40,
   },

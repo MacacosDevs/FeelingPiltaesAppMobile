@@ -6,8 +6,7 @@ import { SportModeProvider } from '../context/SportModeContext';
 import { ReservationsProvider } from '../context/ReservationsContext';
 import { CourtReservationsProvider } from '../context/CourtReservationsContext';
 import { SplashScreen } from '../components/SplashScreen';
-import { LoginScreen } from '../screens/LoginScreen';
-import { RegisterScreen } from '../screens/RegisterScreen';
+import { AuthScreen } from '../screens/AuthScreen';
 import { MainTabs } from './MainTabs';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { ClassDetailScreen } from '../screens/ClassDetailScreen';
@@ -19,29 +18,25 @@ import type { RootStackParamList } from './types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function Navigator() {
-  const { token, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return <SplashScreen />;
   }
 
+  // Sin sesión se puede explorar toda la app (Home, Clases, Paquetes, Eventos)
+  // como invitado; Auth (login/registro, alternables sin navegar) se alcanza
+  // bajo demanda solo al intentar reservar o comprar un paquete, no como
+  // puerta de entrada obligatoria.
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-      {token ? (
-        <>
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-          <Stack.Screen name="ClassDetail" component={ClassDetailScreen} />
-          <Stack.Screen name="InstructorProfile" component={InstructorProfileScreen} />
-          <Stack.Screen name="CourtBooking" component={CourtBookingScreen} />
-          <Stack.Screen name="CourtBookingConfirmation" component={CourtBookingConfirmationScreen} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-        </>
-      )}
+      <Stack.Screen name="Main" component={MainTabs} />
+      <Stack.Screen name="Auth" component={AuthScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="ClassDetail" component={ClassDetailScreen} />
+      <Stack.Screen name="InstructorProfile" component={InstructorProfileScreen} />
+      <Stack.Screen name="CourtBooking" component={CourtBookingScreen} />
+      <Stack.Screen name="CourtBookingConfirmation" component={CourtBookingConfirmationScreen} />
     </Stack.Navigator>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet } from 'react-native';
-import { colors } from '../theme';
+import { commonStyles } from '../theme';
 
 const logoFull = require('../assets/images/logo-full.png');
 
@@ -26,8 +26,7 @@ export function SplashScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.background,
+    ...commonStyles.screen,
     alignItems: 'center',
     justifyContent: 'center',
   },

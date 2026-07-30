@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import {
@@ -19,7 +19,7 @@ import {
   UserCircleIcon as UserCircleIconSolid,
 } from 'react-native-heroicons/solid';
 import { useSportMode } from '../context/SportModeContext';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import type { MainTabParamList } from '../navigation/types';
 
 type NavItem = {
@@ -82,17 +82,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     backgroundColor: colors.surface,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
+    ...shadows.tabBar,
   },
   navItem: {
     alignItems: 'center',

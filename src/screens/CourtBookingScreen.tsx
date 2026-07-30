@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon, MapPinIcon, UserPlusIcon } from 'react-native-heroicons/outline';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { OutlineButton } from '../components/OutlineButton';
+import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
 import { MapPreview } from '../components/MapPreview';
 import {
   DURACIONES,
@@ -14,9 +15,11 @@ import {
   horarioById,
   horarios,
 } from '../data/canchas';
+import { useAuth } from '../context/AuthContext';
 import { useCourtReservations } from '../context/CourtReservationsContext';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';
+import { openDirections } from '../utils/directions';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CourtBooking'>;
@@ -25,10 +28,12 @@ const MODALIDADES = ['Individual', 'Dobles'] as const;
 
 export function CourtBookingScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { addReservation } = useCourtReservations();
   const [duracionMin, setDuracionMin] = useState(90);
   const [modalidad, setModalidad] = useState<'Individual' | 'Dobles'>('Dobles');
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [authGateOpen, setAuthGateOpen] = useState(false);
 
   const activeHorario = horarioById(route.params.horarioId) ?? horarios[0];
   const cancha = canchaById(activeHorario.canchaId);
@@ -49,10 +54,7 @@ export function CourtBookingScreen({ navigation, route }: Props) {
     });
   }
 
-  function openDirections() {
-    const query = encodeURIComponent(geocodeQuery ?? locationLabel);
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
-  }
+  const directionsQuery = geocodeQuery ?? locationLabel;
 
   function reservar() {
     setConfirmModalOpen(false);
@@ -69,7 +71,7 @@ export function CourtBookingScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={commonStyles.screen} edges={['top']}>
       <View style={styles.header}>
         <Pressable style={styles.backBtn} hitSlop={8} onPress={() => navigation.goBack()}>
           <ChevronLeftIcon color={colors.textPrimary} size={22} />
@@ -152,15 +154,34 @@ export function CourtBookingScreen({ navigation, route }: Props) {
             <MapPinIcon color={colors.textMuted} size={16} />
             <Text style={styles.locationText}>{locationLabel}</Text>
           </View>
-          <Pressable onPress={openDirections}>
+          <Pressable onPress={() => openDirections(directionsQuery)}>
             <Text style={styles.directionsLink}>Cómo llegar →</Text>
           </Pressable>
         </View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
-        <PrimaryButton label="Reservar cancha" onPress={() => setConfirmModalOpen(true)} />
+        <PrimaryButton
+          label="Reservar cancha"
+          onPress={() => {
+            if (!user) {
+              setAuthGateOpen(true);
+              return;
+            }
+            setConfirmModalOpen(true);
+          }}
+        />
       </View>
+
+      <AuthRequiredSheet
+        visible={authGateOpen}
+        message="Necesitas iniciar sesión o crear una cuenta para reservar esta cancha."
+        onClose={() => setAuthGateOpen(false)}
+        onLogin={() => {
+          setAuthGateOpen(false);
+          navigation.navigate('Auth', { mode: 'login' });
+        }}
+      />
 
       <Modal
         visible={confirmModalOpen}
@@ -213,10 +234,6 @@ export function CourtBookingScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     height: 52,
     justifyContent: 'center',

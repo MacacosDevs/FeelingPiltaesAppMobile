@@ -6,7 +6,7 @@ import { CheckIcon } from 'react-native-heroicons/outline';
 import QRCode from 'react-native-qrcode-svg';
 import { canchaById, horarioById, horarios } from '../data/canchas';
 import { useAuth } from '../context/AuthContext';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -21,7 +21,7 @@ export function CourtBookingConfirmationScreen({ navigation, route }: Props) {
   const qrValue = `FEELINGPADEL|${activeHorario.id}|${user?.correo ?? ''}`;
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={commonStyles.screen} edges={['top']}>
       <View style={[styles.body, { paddingBottom: 16 + insets.bottom }]}>
         <View style={styles.checkCircle}>
           <CheckIcon color={colors.background} size={28} />
@@ -82,10 +82,6 @@ export function CourtBookingConfirmationScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   body: {
     flex: 1,
     alignItems: 'center',

@@ -14,7 +14,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { OutlineButton } from '../components/OutlineButton';
 import { HeroCarousel, type HeroSlide } from '../components/HeroCarousel';
 import { canchaById, horarios } from '../data/canchas';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import type { MainTabParamList } from '../navigation/types';
 
 type PadelHomeNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>;
@@ -86,7 +86,7 @@ export function PadelHomeScreen() {
   const navigation = useNavigation<PadelHomeNavigationProp>();
 
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
         <HeroCarousel slides={heroSlides} />
 
@@ -170,10 +170,6 @@ export function PadelHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   scrollBody: {
     paddingBottom: 40,
   },

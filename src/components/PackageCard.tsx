@@ -1,12 +1,13 @@
 import React from 'react';
 import { GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 
 type PackageCardProps = {
   nombre: string;
   precio: string;
   vigencia: string;
   unitario: string;
+  descripcion?: string;
   destacado?: boolean;
   onPress?: (event: GestureResponderEvent) => void;
 };
@@ -16,6 +17,7 @@ export function PackageCard({
   precio,
   vigencia,
   unitario,
+  descripcion,
   destacado = false,
   onPress,
 }: PackageCardProps) {
@@ -29,6 +31,9 @@ export function PackageCard({
 
       <Text style={[styles.nombre, destacado && styles.textOnDark]}>{nombre}</Text>
       <Text style={[styles.vigencia, destacado && styles.textMetaOnDark]}>{vigencia}</Text>
+      {descripcion && (
+        <Text style={[styles.descripcion, destacado && styles.textMetaOnDark]}>{descripcion}</Text>
+      )}
 
       <View style={styles.priceRow}>
         <Text style={[styles.precio, destacado && styles.textOnDark]}>{precio}</Text>
@@ -60,11 +65,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     gap: 4,
-    shadowColor: '#2b2420',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 1,
+    ...shadows.card,
   },
   cardDestacado: {
     borderWidth: 0,
@@ -98,6 +99,12 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.body,
     fontSize: fontSize.base,
     color: colors.textMuted,
+  },
+  descripcion: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.base,
+    color: colors.textMuted,
+    marginTop: 4,
   },
   priceRow: {
     flexDirection: 'row',

@@ -43,3 +43,18 @@ export function mapAuthError(e: unknown, modo: 'login' | 'registro'): AuthErrorM
 
   return { ...SIN_ERRORES, general: e.message };
 }
+
+// Separado de mapAuthError porque el inicio de sesión con Google no tiene
+// contraseña: un 401 aquí es un idToken rechazado por el backend, no una
+// credencial incorrecta, así que no debe mostrar ese mensaje.
+export function mapGoogleAuthError(e: unknown): string {
+  if (!(e instanceof ApiError)) {
+    return 'Ocurrió un error inesperado. Intenta de nuevo.';
+  }
+
+  if (e.status === 0) {
+    return 'No se pudo conectar. Revisa tu conexión a internet e intenta de nuevo.';
+  }
+
+  return e.message || 'No se pudo iniciar sesión con Google. Intenta de nuevo.';
+}

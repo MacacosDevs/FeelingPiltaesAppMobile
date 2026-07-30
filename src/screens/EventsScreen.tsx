@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fontFamily, fontSize, fontWeight } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '../theme';
 
 export function EventsScreen() {
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={commonStyles.screen} edges={[]}>
       <View style={styles.content}>
         <Text style={styles.icon}>◷</Text>
         <Text style={styles.title}>Próximamente</Text>
@@ -18,10 +18,6 @@ export function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   content: {
     flex: 1,
     alignItems: 'center',
