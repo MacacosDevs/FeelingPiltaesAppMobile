@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
@@ -17,6 +17,7 @@ import { crearIntentoPago } from '../api/pagos';
 import { ApiError } from '../api/client';
 import type { PaqueteResponse } from '../api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';
+import { generarClaveIdempotencia } from '../utils/idempotency';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '../theme';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 
@@ -44,6 +45,9 @@ export function PackagesScreen() {
   const [paqueteSeleccionado, setPaqueteSeleccionado] = useState<PaqueteResponse | null>(null);
   const [procesandoPago, setProcesandoPago] = useState(false);
   const [compraExitosa, setCompraExitosa] = useState<PaqueteResponse | null>(null);
+  // Una clave por intento de compra (no por cada tap de "Pagar"): si hay que
+  // reintentar tras un timeout, se reusa para que el backend no duplique el pago.
+  const claveIdempotenciaRef = useRef<string | null>(null);
 
   useEffect(() => {
     listarPaquetes()
@@ -58,6 +62,7 @@ export function PackagesScreen() {
         setAuthGateOpen(true);
         return;
       }
+      claveIdempotenciaRef.current = generarClaveIdempotencia();
       setPaqueteSeleccionado(paquete);
     },
     [user, token],
@@ -67,6 +72,7 @@ export function PackagesScreen() {
     if (procesandoPago) {
       return;
     }
+    claveIdempotenciaRef.current = null;
     setPaqueteSeleccionado(null);
   }, [procesandoPago]);
 
@@ -75,9 +81,12 @@ export function PackagesScreen() {
       return;
     }
     const paquete = paqueteSeleccionado;
+    if (!claveIdempotenciaRef.current) {
+      claveIdempotenciaRef.current = generarClaveIdempotencia();
+    }
     setProcesandoPago(true);
     try {
-      const { clientSecret } = await crearIntentoPago(token, paquete.id);
+      const { clientSecret } = await crearIntentoPago(token, paquete.id, claveIdempotenciaRef.current);
       const { error: initError } = await initPaymentSheet({
         merchantDisplayName: 'Feeling Pilates',
         paymentIntentClientSecret: clientSecret,
@@ -94,6 +103,7 @@ export function PackagesScreen() {
         }
         return;
       }
+      claveIdempotenciaRef.current = null;
       setPaqueteSeleccionado(null);
       setCompraExitosa(paquete);
     } catch (err) {

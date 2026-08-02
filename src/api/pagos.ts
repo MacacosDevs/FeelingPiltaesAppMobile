@@ -1,10 +1,15 @@
 import { apiFetch } from './client';
 import type { CompraResponse, CrearPagoResponse, PaqueteActivoResponse } from './types';
 
-export function crearIntentoPago(token: string, paqueteId: string): Promise<CrearPagoResponse> {
+export function crearIntentoPago(
+  token: string,
+  paqueteId: string,
+  idempotencyKey: string,
+): Promise<CrearPagoResponse> {
   return apiFetch<CrearPagoResponse>(`/api/pagos/paquetes/${paqueteId}/intento`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ idempotencyKey }),
   });
 }
 

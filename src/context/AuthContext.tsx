@@ -6,14 +6,12 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as authApi from '../api/auth';
 import { actualizarPerfil, obtenerPerfil, subirFoto, type ImageAsset } from '../api/usuarios';
 import type { UsuarioResponse } from '../api/types';
 import { GOOGLE_WEB_CLIENT_ID } from '../config/googleAuth';
-
-const TOKEN_STORAGE_KEY = 'feelingpilates.token';
+import { borrarToken, guardarToken, obtenerToken } from '../utils/secureToken';
 
 GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
 
@@ -50,14 +48,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const storedToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+      const storedToken = await obtenerToken();
       if (storedToken) {
         try {
           applyUser(await obtenerPerfil(storedToken));
           setToken(storedToken);
         } catch {
           // token expirado/inválido: se trata como sesión cerrada
-          await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+          await borrarToken();
         }
       }
       setIsLoading(false);
@@ -66,14 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (correo: string, contrasena: string) => {
     const response = await authApi.login(correo, contrasena);
-    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.token);
+    await guardarToken(response.token);
     applyUser(await obtenerPerfil(response.token));
     setToken(response.token);
   }, [applyUser]);
 
   const registrar = useCallback(async (correo: string, contrasena: string, nombre: string) => {
     const response = await authApi.registrar(correo, contrasena, nombre);
-    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.token);
+    await guardarToken(response.token);
     applyUser(await obtenerPerfil(response.token));
     setToken(response.token);
   }, [applyUser]);
@@ -85,13 +83,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('No se pudo iniciar sesión con Google');
     }
     const response = await authApi.loginConGoogle(signInResponse.data.idToken);
-    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, response.token);
+    await guardarToken(response.token);
     applyUser(await obtenerPerfil(response.token));
     setToken(response.token);
   }, [applyUser]);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+    await borrarToken();
     setToken(null);
     setUser(null);
   }, []);
