@@ -77,3 +77,23 @@ export type CrearPagoResponse = {
   clientSecret: string;
   publishableKey: string;
 };
+
+export type PerfilInstructorResponse = {
+  usuarioId: string;
+  nombre: string;
+  fotoUrl: string | null;
+  sobreSuClase: string | null;
+  calificacionPromedio: number | null;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  tiktokUrl: string | null;
+  whatsappUrl: string | null;
+};
+
+export type ActualizarPerfilInstructorRequest = {
+  sobreSuClase: string | null;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  tiktokUrl: string | null;
+  whatsappUrl: string | null;
+};

@@ -1,10 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon, StarIcon } from 'react-native-heroicons/outline';
+import { obtenerPerfilInstructor } from '../api/instructores';
+import type { PerfilInstructorResponse } from '../api/types';
 import { clases, INSTRUCTOR_META, stripCon } from '../data/clases';
 import { ACTIVITY_META } from '../utils/activityMeta';
+import { SocialLinksRow } from '../components/SocialLinksRow';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { WEEKDAY_LABELS, addDays, mondayOf, startOfDay, weekdayIndexMondayFirst } from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
@@ -17,6 +20,38 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
   const { instructora } = route.params;
   const meta = INSTRUCTOR_META[instructora];
   const name = stripCon(instructora);
+
+  // El horario/especialidades siguen viniendo del mock local (todavía no hay
+  // módulo de clases en el backend); bio, calificación, foto y redes sociales
+  // sí son datos reales de la instructora y se traen del backend. Si falla o
+  // la instructora no tiene usuarioId, se mantiene lo que ya había en el mock.
+  const [perfil, setPerfil] = useState<PerfilInstructorResponse | null>(null);
+
+  useEffect(() => {
+    if (!meta?.usuarioId) return;
+    let cancelled = false;
+    obtenerPerfilInstructor(meta.usuarioId)
+      .then(data => {
+        if (!cancelled) setPerfil(data);
+      })
+      .catch(() => {
+        // Sin conexión o instructora sin perfil todavía: nos quedamos con el mock.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [meta?.usuarioId]);
+
+  const bio = perfil?.sobreSuClase ?? meta?.bio;
+  const rating = perfil?.calificacionPromedio ?? meta?.rating;
+  const redesSociales = perfil
+    ? {
+        instagramUrl: perfil.instagramUrl ?? undefined,
+        facebookUrl: perfil.facebookUrl ?? undefined,
+        tiktokUrl: perfil.tiktokUrl ?? undefined,
+        whatsappUrl: perfil.whatsappUrl ?? undefined,
+      }
+    : meta?.redesSociales;
 
   const classesThisWeek = useMemo(() => {
     const today = startOfDay(new Date());
@@ -37,13 +72,13 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <View style={styles.profileHeader}>
-          <Image source={avatarPlaceholder} style={styles.avatar} />
+          <Image source={perfil?.fotoUrl ? { uri: perfil.fotoUrl } : avatarPlaceholder} style={styles.avatar} />
           <Text style={styles.name}>{name}</Text>
-          {meta && (
+          {meta && rating != null && (
             <View style={styles.ratingRow}>
               <StarIcon color={colors.gold} size={16} />
               <Text style={styles.ratingText}>
-                {meta.rating} · {meta.clasesImpartidas} clases impartidas
+                {rating} · {meta.clasesImpartidas} clases impartidas
               </Text>
             </View>
           )}
@@ -56,9 +91,10 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
               ))}
             </View>
           )}
+          <SocialLinksRow redesSociales={redesSociales} />
         </View>
 
-        {meta?.bio && <Text style={styles.bio}>{meta.bio}</Text>}
+        {bio && <Text style={styles.bio}>{bio}</Text>}
 
         <View style={styles.divider} />
 

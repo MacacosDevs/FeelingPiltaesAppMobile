@@ -256,33 +256,53 @@ export function salonGeocodeQuery(sala: string): string | undefined {
   return address ? `${address}, ${CIUDAD_GEOCODIFICACION}` : undefined;
 }
 
+export type InstructorRedesSociales = {
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
+  whatsappUrl?: string;
+};
+
 export type InstructorMeta = {
+  // Id del usuario real en el backend (ver migración V18__instructores_semilla.sql).
+  // Con esto InstructorProfileScreen trae bio/calificación/redes sociales reales;
+  // lo demás (especialidades, horario) sigue viniendo de este mock hasta que
+  // exista un módulo de clases en el backend.
+  usuarioId: string;
   rating: number;
   clasesImpartidas: number;
   especialidades: string[];
   bio: string;
+  redesSociales?: InstructorRedesSociales;
 };
 
 export const INSTRUCTOR_META: Record<string, InstructorMeta> = {
   'Con Vane Torres': {
+    usuarioId: '00000000-0000-4000-8000-000000000001',
     rating: 4.9,
     clasesImpartidas: 312,
     especialidades: ['Reformer'],
     bio: 'Especialista en Reformer. Cree en el movimiento consciente como forma de fuerza y calma.',
+    redesSociales: {
+      instagramUrl: 'https://www.instagram.com/',
+    },
   },
   'Con Ale': {
+    usuarioId: '00000000-0000-4000-8000-000000000002',
     rating: 4.8,
     clasesImpartidas: 246,
     especialidades: ['Barre Sculpt'],
     bio: 'Especialista en Barre Sculpt. Le apasiona ayudarte a tonificar con técnica y buena energía.',
   },
   'Con Dany Casillas': {
+    usuarioId: '00000000-0000-4000-8000-000000000003',
     rating: 4.9,
     clasesImpartidas: 198,
     especialidades: ['Mat Pilates'],
     bio: 'Especialista en Mat Pilates. Enfocada en un método consciente, de bajo impacto y gran efectividad.',
   },
   'Con Rocío Fernández': {
+    usuarioId: '00000000-0000-4000-8000-000000000004',
     rating: 4.7,
     clasesImpartidas: 134,
     especialidades: ['Bacu Fit'],
