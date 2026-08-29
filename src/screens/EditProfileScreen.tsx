@@ -20,7 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { resolveMediaUrl } from '../utils/media';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfile'>;
 

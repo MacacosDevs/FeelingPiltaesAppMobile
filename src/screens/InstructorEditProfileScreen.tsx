@@ -23,7 +23,7 @@ import { ApiError } from '../api/client';
 import { resolveMediaUrl } from '../utils/media';
 import { armarUrl, extraerUsuario, SOCIAL_PREFIX_LABEL } from '../utils/socialLinks';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'InstructorEditProfile'>;
 

@@ -13,7 +13,7 @@ import { ApiError } from '../api/client';
 import type { ClaseResponse } from '../api/types';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatHora } from '../utils/date';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'InstructorClassCheckIn'>;
 

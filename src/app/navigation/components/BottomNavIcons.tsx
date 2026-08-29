@@ -1,6 +1,6 @@
 import React from 'react';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { colors } from '../theme';
+import { colors } from '@/theme';
 
 interface NavIconProps {
   active?: boolean;

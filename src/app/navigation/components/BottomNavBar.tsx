@@ -9,8 +9,8 @@ import {
   NavTicketIcon,
   NavUserIcon,
 } from './BottomNavIcons';
-import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
-import type { MainTabParamList } from '../navigation/types';
+import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
+import type { MainTabParamList } from '../types';
 
 type NavItem = {
   key: string;

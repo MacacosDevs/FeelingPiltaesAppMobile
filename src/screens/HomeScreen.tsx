@@ -24,7 +24,7 @@ import {
 import { useSportMode } from '../context/SportModeContext';
 import { PadelHomeScreen } from './PadelHomeScreen';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
-import type { MainTabParamList } from '../navigation/types';
+import type { MainTabParamList } from '@/app/navigation/types';
 
 type HomeNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>;
 

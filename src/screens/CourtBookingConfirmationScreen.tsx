@@ -8,7 +8,7 @@ import { canchaById, horarioById, horarios } from '../data/canchas';
 import { useAuth } from '../context/AuthContext';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CourtBookingConfirmation'>;
 

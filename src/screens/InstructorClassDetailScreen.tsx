@@ -22,7 +22,7 @@ import type { ClaseReservaResponse, ClaseResponse } from '../api/types';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate, formatHora } from '../utils/date';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'InstructorClassDetail'>;
 

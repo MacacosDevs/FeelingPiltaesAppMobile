@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet } from 'react-native';
-import { commonStyles } from '../theme';
+import { commonStyles } from '@/theme';
 
-const logoFull = require('../assets/images/logo-full.png');
+const logoFull = require('@/assets/images/logo-full.png');
 
 // Se muestra mientras se revisa si ya hay una sesión guardada (arranque de la
 // app), antes de decidir si ir a Login o directo a Main.

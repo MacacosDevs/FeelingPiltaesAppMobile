@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HeroUINativeProvider } from 'heroui-native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { ScopedTheme } from 'uniwind';
-import { RootNavigator } from './src/navigation/RootNavigator';
+import { RootNavigator } from './src/app/navigation/RootNavigator';
 import { STRIPE_PUBLISHABLE_KEY } from './src/config/env';
 import './src/global.css';
 

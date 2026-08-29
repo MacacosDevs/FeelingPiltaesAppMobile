@@ -27,7 +27,7 @@ import {
   startOfDay,
   weekdayIndexMondayFirst,
 } from '../utils/date';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
 

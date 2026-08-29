@@ -15,7 +15,7 @@ import { OutlineButton } from '../components/OutlineButton';
 import { HeroCarousel, type HeroSlide } from '../components/HeroCarousel';
 import { canchaById, horarios } from '../data/canchas';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import type { MainTabParamList } from '../navigation/types';
+import type { MainTabParamList } from '@/app/navigation/types';
 
 type PadelHomeNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>;
 

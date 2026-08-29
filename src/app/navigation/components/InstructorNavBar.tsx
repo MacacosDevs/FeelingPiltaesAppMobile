@@ -10,8 +10,8 @@ import {
   CalendarDaysIcon as CalendarDaysIconSolid,
   UserCircleIcon as UserCircleIconSolid,
 } from 'react-native-heroicons/solid';
-import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
-import type { InstructorTabParamList } from '../navigation/types';
+import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
+import type { InstructorTabParamList } from '../types';
 
 type NavItem = {
   key: string;

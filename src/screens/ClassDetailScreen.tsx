@@ -37,7 +37,7 @@ import { useAuth } from '../context/AuthContext';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import { formatDayMonth, formatFullDate, formatHora } from '../utils/date';
 import { openDirections } from '../utils/directions';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
 const imgYoga = require('../assets/images/yoga-wellness.jpg');

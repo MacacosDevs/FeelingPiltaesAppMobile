@@ -13,7 +13,7 @@ import { resolveMediaUrl } from '../utils/media';
 import { canchaById, horarioById } from '../data/canchas';
 import { formatShortDate } from '../utils/date';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
-import type { MainTabParamList, RootStackParamList } from '../navigation/types';
+import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 type PadelAccountNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Account'>,

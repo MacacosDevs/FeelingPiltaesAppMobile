@@ -18,7 +18,7 @@ import {
   mondayOf,
   startOfDay,
 } from '../utils/date';
-import type { MainTabParamList, RootStackParamList } from '../navigation/types';
+import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 const DAYS_IN_STRIP = 7;
 

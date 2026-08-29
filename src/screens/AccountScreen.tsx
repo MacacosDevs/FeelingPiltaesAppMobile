@@ -19,7 +19,7 @@ import { formatDayMonth, formatShortDate } from '../utils/date';
 import { formatPrecio } from '../utils/money';
 import type { CompraResponse } from '../api/types';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
-import type { MainTabParamList, RootStackParamList } from '../navigation/types';
+import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 type AccountNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Account'>,

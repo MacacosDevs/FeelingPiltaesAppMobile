@@ -2,11 +2,11 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { InstructorCalendarScreen } from '../screens/InstructorCalendarScreen';
-import { InstructorAccountScreen } from '../screens/InstructorAccountScreen';
-import { InstructorNavBar } from '../components/InstructorNavBar';
-import { TopBar } from '../components/TopBar';
-import { colors } from '../theme';
+import { InstructorCalendarScreen } from '@/screens/InstructorCalendarScreen';
+import { InstructorAccountScreen } from '@/screens/InstructorAccountScreen';
+import { InstructorNavBar } from './components/InstructorNavBar';
+import { TopBar } from './components/TopBar';
+import { colors } from '@/theme';
 import type { InstructorTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<InstructorTabParamList>();

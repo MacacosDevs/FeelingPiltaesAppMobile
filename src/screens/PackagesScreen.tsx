@@ -14,7 +14,7 @@ import { listarPaquetes } from '../api/paquetes';
 import type { PaqueteResponse } from '../api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '../theme';
-import type { MainTabParamList, RootStackParamList } from '../navigation/types';
+import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 type PackagesNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Paquetes'>,

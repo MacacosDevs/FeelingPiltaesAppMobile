@@ -10,7 +10,7 @@ import { OutlineButton } from '../components/OutlineButton';
 import { useAuth } from '../context/AuthContext';
 import { resolveMediaUrl } from '../utils/media';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import type { InstructorTabParamList, RootStackParamList } from '../navigation/types';
+import type { InstructorTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 type NavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<InstructorTabParamList, 'Cuenta'>,

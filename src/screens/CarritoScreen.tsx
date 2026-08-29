@@ -14,7 +14,7 @@ import type { PaqueteResponse } from '../api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';
 import { generarClaveIdempotencia } from '../utils/idempotency';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Carrito'>;
 

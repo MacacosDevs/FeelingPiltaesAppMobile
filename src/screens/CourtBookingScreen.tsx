@@ -20,7 +20,7 @@ import { useCourtReservations } from '../context/CourtReservationsContext';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';
 import { openDirections } from '../utils/directions';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CourtBooking'>;
 

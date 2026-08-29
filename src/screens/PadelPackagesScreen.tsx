@@ -8,7 +8,7 @@ import { PackageCard } from '../components/PackageCard';
 import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
 import { useAuth } from '../context/AuthContext';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '../theme';
-import type { MainTabParamList, RootStackParamList } from '../navigation/types';
+import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 type PadelPackagesNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Paquetes'>,

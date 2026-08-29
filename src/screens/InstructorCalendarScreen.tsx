@@ -29,7 +29,7 @@ import {
   startOfDay,
   weekdayIndexMondayFirst,
 } from '../utils/date';
-import type { InstructorTabParamList, RootStackParamList } from '../navigation/types';
+import type { InstructorTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 type NavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<InstructorTabParamList, 'Calendario'>,

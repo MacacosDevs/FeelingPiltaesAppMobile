@@ -24,7 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { mapAuthError, mapGoogleAuthError } from '../utils/authErrors';
 import { validarContrasena, validarCorreo } from '../utils/validation';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '@/app/navigation/types';
 
 const imgWelcome = require('../assets/images/welcome-art.jpg');
 
