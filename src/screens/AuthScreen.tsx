@@ -19,15 +19,15 @@ import { GoogleIcon } from '../components/GoogleIcon';
 import { OutlineButton } from '../components/OutlineButton';
 import { PasswordField } from '../components/PasswordField';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { SparkleIcon } from '../components/LumaArt';
 import { useAuth } from '../context/AuthContext';
 import { mapAuthError, mapGoogleAuthError } from '../utils/authErrors';
 import { validarContrasena, validarCorreo } from '../utils/validation';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import type { RootStackParamList } from '../navigation/types';
 
-const logoFull = require('../assets/images/logo-full.png');
+const imgWelcome = require('../assets/images/welcome-art.jpg');
 
-// Coincide con el mínimo que exige el backend (RegistroRequest: @Size(min = 8)).
 const LONGITUD_MINIMA_CONTRASENA_REGISTRO = 8;
 
 type Mode = 'login' | 'register';
@@ -48,8 +48,6 @@ export function AuthScreen({ navigation, route }: Props) {
   const isBusy = loading || googleLoading;
   const isLogin = mode === 'login';
 
-  // Cambiar de modo es un toggle local, no una navegación: se ve y se siente
-  // como cambiar de pestaña, no como pasar a otra pantalla.
   function cambiarModo(nuevoModo: Mode) {
     if (nuevoModo === mode) return;
     setMode(nuevoModo);
@@ -101,9 +99,6 @@ export function AuthScreen({ navigation, route }: Props) {
     }
   };
 
-  // Auth ya no es la puerta de entrada obligatoria: se alcanza bajo demanda
-  // (p. ej. al intentar reservar o comprar un paquete como invitado), así que
-  // al autenticarse con éxito hay que volver a la pantalla que lo pidió.
   const volverTrasIniciarSesion = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -113,7 +108,7 @@ export function AuthScreen({ navigation, route }: Props) {
   function handleOlvideContrasena() {
     Alert.alert(
       'Restablecer contraseña',
-      'Por ahora, comunícate con el estudio para restablecer tu contraseña.',
+      'Por ahora, comunícate con la recepción del estudio para restablecer tu contraseña.',
     );
   }
 
@@ -130,68 +125,21 @@ export function AuthScreen({ navigation, route }: Props) {
         style={styles.flex}
         behavior={Platform.select({ ios: 'padding', default: undefined })}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <Image source={logoFull} style={styles.logo} resizeMode="contain" />
-
-          <Text style={styles.subtitle}>
-            {isLogin
-              ? 'Ingresa tu correo electrónico para iniciar sesión.'
-              : 'Ingresa tus datos para crear tu cuenta.'}
-          </Text>
-
-          {!isLogin && (
-            <Input
-              value={nombre}
-              onChangeText={text => {
-                setNombre(text);
-                setError(null);
-              }}
-              placeholder="Nombre completo"
-              isInvalid={!!error}
-              isDisabled={isBusy}
-              style={styles.input}
-            />
-          )}
-
-          <View>
-            <Input
-              value={correo}
-              onChangeText={text => {
-                setCorreo(text);
-                setCorreoError(null);
-                setError(null);
-              }}
-              placeholder="Ingresa tu correo electrónico"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              isInvalid={!!correoError || !!error}
-              isDisabled={isBusy}
-              style={styles.input}
-            />
-            {correoError && <FieldError isInvalid>{correoError}</FieldError>}
+          {/* Arte orgánico de bienvenida realista */}
+          <View style={styles.artCard}>
+            <Image source={imgWelcome} style={styles.artImage} resizeMode="cover" />
           </View>
 
-          <PasswordField
-            value={contrasena}
-            onChangeText={text => {
-              setContrasena(text);
-              setContrasenaError(null);
-              setError(null);
-            }}
-            placeholder="Contraseña"
-            isInvalid={!!contrasenaError || !!error}
-            isDisabled={isBusy}
-            errorMessage={contrasenaError}
-          />
+          {/* Marca y Lema */}
+          <View style={styles.brandContainer}>
+            <SparkleIcon size={24} color={colors.sage} />
+            <Text style={styles.title}>Feeling Pilates</Text>
+            <Text style={styles.subtitle}>
+              Bienestar y movimiento que ilumina tu día a día.
+            </Text>
+          </View>
 
-          {isLogin && (
-            <Pressable
-              style={styles.forgotPasswordLink}
-              hitSlop={8}
-              onPress={handleOlvideContrasena}>
-              <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
-            </Pressable>
-          )}
-
+          {/* Toggle de Modo */}
           <View style={styles.modeSwitch}>
             <Pressable
               style={[styles.modeOption, isLogin && styles.modeOptionActive]}
@@ -205,23 +153,80 @@ export function AuthScreen({ navigation, route }: Props) {
             </Pressable>
           </View>
 
-          {error && <FieldError isInvalid>{error}</FieldError>}
+          {/* Campos de Entrada */}
+          <View style={styles.formContainer}>
+            {!isLogin && (
+              <Input
+                value={nombre}
+                onChangeText={text => {
+                  setNombre(text);
+                  setError(null);
+                }}
+                placeholder="Nombre completo"
+                isInvalid={!!error}
+                isDisabled={isBusy}
+                style={styles.input}
+              />
+            )}
 
-          <PrimaryButton
-            label={isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
-            onPress={handleContinuar}
-            disabled={isBusy}
-          />
+            <View>
+              <Input
+                value={correo}
+                onChangeText={text => {
+                  setCorreo(text);
+                  setCorreoError(null);
+                  setError(null);
+                }}
+                placeholder="Correo electrónico"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                isInvalid={!!correoError || !!error}
+                isDisabled={isBusy}
+                style={styles.input}
+              />
+              {correoError && <FieldError isInvalid>{correoError}</FieldError>}
+            </View>
 
-          <Text style={styles.dividerText}>O continúa con:</Text>
+            <PasswordField
+              value={contrasena}
+              onChangeText={text => {
+                setContrasena(text);
+                setContrasenaError(null);
+                setError(null);
+              }}
+              placeholder="Contraseña"
+              isInvalid={!!contrasenaError || !!error}
+              isDisabled={isBusy}
+              errorMessage={contrasenaError}
+            />
 
-          <OutlineButton
-            label="Continuar con Google"
-            onPress={handleGoogle}
-            disabled={isBusy}
-            icon={<GoogleIcon size={18} />}
-            style={styles.googleButton}
-          />
+            {isLogin && (
+              <Pressable
+                style={styles.forgotPasswordLink}
+                hitSlop={8}
+                onPress={handleOlvideContrasena}>
+                <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+              </Pressable>
+            )}
+
+            {error && <FieldError isInvalid>{error}</FieldError>}
+
+            <PrimaryButton
+              label={isLogin ? 'Comenzar sesión' : 'Crear mi cuenta'}
+              onPress={handleContinuar}
+              disabled={isBusy}
+            />
+
+            <Text style={styles.dividerText}>O continúa con</Text>
+
+            <OutlineButton
+              label="Continuar con Google"
+              onPress={handleGoogle}
+              disabled={isBusy}
+              icon={<GoogleIcon size={18} />}
+              style={styles.googleButton}
+            />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -237,8 +242,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   backBtn: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -249,45 +258,60 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 28,
-    paddingVertical: 24,
-    gap: 16,
+    paddingVertical: 20,
+    gap: 18,
   },
-  logo: {
-    width: 220,
-    height: 92,
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  input: {
+  artCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 220,
+    borderRadius: radius.cardLg,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceSoft,
+    ...shadows.card,
   },
-  forgotPasswordLink: {
-    alignSelf: 'flex-end',
-    marginTop: -8,
+  artImage: {
+    width: '100%',
+    height: '100%',
   },
-  forgotPasswordText: {
+  brandContainer: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  title: {
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.heading + 4,
+    color: colors.textPrimary,
+    letterSpacing: 0.3,
+  },
+  subtitle: {
     fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.smMedium,
-    color: colors.accent,
+    fontSize: fontSize.base + 1,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 260,
   },
   modeSwitch: {
     flexDirection: 'row',
     alignSelf: 'center',
     gap: 2,
-    padding: 3,
+    padding: 4,
     borderRadius: radius.pill,
     backgroundColor: colors.chipBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modeOption: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: radius.pill,
   },
   modeOptionActive: {
-    backgroundColor: colors.textPrimary,
-    ...shadows.pill,
+    backgroundColor: colors.surface,
+    ...shadows.card,
   },
   modeLabel: {
     fontFamily: fontFamily.body,
@@ -296,19 +320,34 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   modeLabelActive: {
-    color: colors.surface,
+    color: colors.accent,
+    fontWeight: fontWeight.semibold,
   },
-  subtitle: {
+  formContainer: {
+    gap: 14,
+  },
+  input: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginTop: -4,
+  },
+  forgotPasswordText: {
     fontFamily: fontFamily.body,
-    fontSize: fontSize.md,
-    color: colors.textMuted,
-    textAlign: 'center',
+    fontWeight: fontWeight.medium,
+    fontSize: fontSize.smMedium,
+    color: colors.accent,
   },
   dividerText: {
     fontFamily: fontFamily.body,
-    fontSize: fontSize.smMedium,
+    fontSize: fontSize.xs + 1,
     color: colors.textMuted,
     textAlign: 'center',
+    marginVertical: 2,
   },
   googleButton: {
     borderColor: colors.border,

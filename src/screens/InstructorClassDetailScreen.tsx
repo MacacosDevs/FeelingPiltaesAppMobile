@@ -1,40 +1,98 @@
-import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { CheckCircleIcon } from 'react-native-heroicons/solid';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { CapacityIndicator } from '../components/CapacityIndicator';
 import { Avatar } from '../components/Avatar';
-import { useAttendance } from '../context/AttendanceContext';
-import { clases } from '../data/clases';
-import { mockAttendeesFor } from '../data/mockAttendees';
+import { useAuth } from '../context/AuthContext';
+import { listarAsistentes, obtenerClase } from '../api/clases';
+import type { ClaseReservaResponse, ClaseResponse } from '../api/types';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import { formatFullDate } from '../utils/date';
+import { formatFullDate, formatHora } from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'InstructorClassDetail'>;
 
 export function InstructorClassDetailScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const activeClase = clases.find(clase => clase.id === route.params.claseId) ?? clases[0];
-  const activity = ACTIVITY_META[activeClase.nombre];
+  const { token } = useAuth();
+  const [activeClase, setActiveClase] = useState<ClaseResponse | null>(null);
+  const [asistentes, setAsistentes] = useState<ClaseReservaResponse[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [refrescando, setRefrescando] = useState(false);
 
-  // Lista de ejemplo: no existe todavía un sistema real de reservas que
-  // registre quién se inscribió a cada clase (ver InstructorCalendarScreen.tsx
-  // y mockAttendees.ts). Cuando exista, esto se reemplaza por un fetch real.
-  const attendees = useMemo(
-    () => mockAttendeesFor(activeClase.id, activeClase.lugaresOcupados),
-    [activeClase.id, activeClase.lugaresOcupados],
+  // Se recarga cada vez que la pantalla gana foco (no solo al montar), para
+  // reflejar los check-ins hechos en InstructorClassCheckInScreen al volver.
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      let cancelado = false;
+      setCargando(true);
+      Promise.all([obtenerClase(route.params.claseId), listarAsistentes(token, route.params.claseId)])
+        .then(([clase, lista]) => {
+          if (!cancelado) {
+            setActiveClase(clase);
+            setAsistentes(lista);
+          }
+        })
+        .catch(() => {
+          if (!cancelado) {
+            setActiveClase(null);
+            setAsistentes([]);
+          }
+        })
+        .finally(() => {
+          if (!cancelado) setCargando(false);
+        });
+      return () => {
+        cancelado = true;
+      };
+    }, [token, route.params.claseId]),
   );
 
-  // Cuántos de la lista de ejemplo ya se marcaron presentes al escanear su QR
-  // (ver AttendanceContext.tsx). Como todavía no hay reservas reales, cada
-  // escaneo válido marca a la siguiente persona de la lista, en orden.
-  const { getPresentCount } = useAttendance();
-  const presentCount = Math.min(getPresentCount(activeClase.id), attendees.length);
+  async function handleRefresh() {
+    if (!token) return;
+    setRefrescando(true);
+    try {
+      const [clase, lista] = await Promise.all([
+        obtenerClase(route.params.claseId),
+        listarAsistentes(token, route.params.claseId),
+      ]);
+      setActiveClase(clase);
+      setAsistentes(lista);
+    } catch {
+      // Se conserva lo ya cargado si falla el refresco.
+    }
+    setRefrescando(false);
+  }
+
+  if (cargando || !activeClase) {
+    return (
+      <SafeAreaView style={[commonStyles.screen, styles.center]} edges={['top']}>
+        {cargando ? (
+          <ActivityIndicator color={colors.accent} />
+        ) : (
+          <Text style={styles.infoValue}>No se encontró esta clase.</Text>
+        )}
+      </SafeAreaView>
+    );
+  }
+
+  const activity = ACTIVITY_META[activeClase.tipoActividadNombre];
+  const presentCount = asistentes.filter(a => a.estado === 'ASISTIO').length;
 
   return (
     <SafeAreaView style={commonStyles.screen} edges={['top']}>
@@ -44,61 +102,63 @@ export function InstructorClassDetailScreen({ navigation, route }: Props) {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <Text style={styles.kicker}>{activeClase.sala}</Text>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor={colors.accent} />
+        }>
+        <Text style={styles.kicker}>{activeClase.salonNombre}</Text>
         <View style={styles.titleRow}>
           {activity && (
             <View style={[styles.titleIconWrap, { backgroundColor: activity.color }]}>
               <activity.Icon color={colors.background} size={20} />
             </View>
           )}
-          <Text style={styles.title}>{activeClase.nombre.toUpperCase()}</Text>
+          <Text style={styles.title}>{activeClase.tipoActividadNombre.toUpperCase()}</Text>
         </View>
         <CapacityIndicator ocupados={activeClase.lugaresOcupados} capacidad={activeClase.capacidad} size="md" />
 
         <View style={styles.infoList}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Fecha</Text>
-            <Text style={styles.infoValue}>{formatFullDate(activeClase.fecha)}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Hora</Text>
-            <Text style={styles.infoValue}>{activeClase.hora}</Text>
+            <Text style={styles.infoValue}>{formatFullDate(new Date(`${activeClase.fecha}T00:00:00`))}</Text>
           </View>
           <View style={[styles.infoRow, styles.infoRowLast]}>
-            <Text style={styles.infoLabel}>Duración</Text>
-            <Text style={styles.infoValue}>{activeClase.duracion}</Text>
+            <Text style={styles.infoLabel}>Hora</Text>
+            <Text style={styles.infoValue}>
+              {formatHora(activeClase.horaInicio)} - {formatHora(activeClase.horaFin)}
+            </Text>
           </View>
         </View>
 
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionLabel}>Lista de inscritos</Text>
           <Text style={styles.sectionCount}>
-            {presentCount}/{attendees.length} presentes
+            {presentCount}/{asistentes.length} presentes
           </Text>
         </View>
-        <Text style={styles.exampleNote}>
-          Nombres de ejemplo — todavía no existe el sistema de reservas que diga quién se inscribió de verdad.
-        </Text>
 
-        {attendees.length === 0 ? (
+        {asistentes.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>Nadie se ha inscrito a esta clase todavía.</Text>
           </View>
         ) : (
           <View style={styles.attendeeList}>
-            {attendees.map((nombre, index) => {
-              const presente = index < presentCount;
+            {asistentes.map((asistente, index) => {
+              const presente = asistente.estado === 'ASISTIO';
               return (
                 <View
-                  key={nombre + index}
+                  key={asistente.id}
                   style={[
                     styles.attendeeRow,
                     presente && styles.attendeeRowPresent,
-                    index === attendees.length - 1 && styles.attendeeRowLast,
+                    index === asistentes.length - 1 && styles.attendeeRowLast,
                   ]}>
-                  <Avatar name={nombre} size={36} />
-                  <Text style={[styles.attendeeName, presente && styles.attendeeNamePresent]}>{nombre}</Text>
+                  <Avatar name={asistente.clienteNombre} size={36} />
+                  <Text style={[styles.attendeeName, presente && styles.attendeeNamePresent]}>
+                    {asistente.clienteNombre}
+                  </Text>
                   {presente && <CheckCircleIcon color={colors.spotsAvailable} size={20} />}
                 </View>
               );
@@ -126,6 +186,10 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 34,
     height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  center: {
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -202,12 +266,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
     fontSize: fontSize.sm,
     color: colors.textMuted,
-  },
-  exampleNote: {
-    fontFamily: fontFamily.body,
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginTop: -12,
   },
   attendeeList: {
     borderRadius: radius.input,

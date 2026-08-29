@@ -44,7 +44,12 @@ export function PadelPackagesScreen() {
         </View>
 
         {paquetes.map(paquete => (
-          <PackageCard key={paquete.nombre} {...paquete} onPress={handleElegirPaquete} />
+          <PackageCard
+            key={paquete.nombre}
+            {...paquete}
+            ctaLabel="Elegir paquete"
+            onPress={handleElegirPaquete}
+          />
         ))}
 
         <Text style={styles.footerNote}>

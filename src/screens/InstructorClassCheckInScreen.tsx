@@ -5,41 +5,43 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import { ChevronLeftIcon, QrCodeIcon } from 'react-native-heroicons/outline';
-import { CheckCircleIcon } from 'react-native-heroicons/solid';
+import { CheckCircleIcon, XCircleIcon } from 'react-native-heroicons/solid';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { useAttendance } from '../context/AttendanceContext';
-import { clases } from '../data/clases';
+import { useAuth } from '../context/AuthContext';
+import { obtenerClase, registrarCheckin } from '../api/clases';
+import { ApiError } from '../api/client';
+import type { ClaseResponse } from '../api/types';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
+import { formatHora } from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'InstructorClassCheckIn'>;
 
 type Escaneo = {
   valor: string;
-  correo: string | null;
-  esDeEstaClase: boolean;
+  ok: boolean;
+  mensaje: string;
   hora: string;
 };
 
-// El formato "FEELINGPILATES|claseId|correo" ya lo genera ClassDetailScreen.tsx
-// cuando una clienta reserva una clase (código QR de su reserva). Todavía no
-// existe un backend de reservas, así que aquí solo detectamos y mostramos lo
-// escaneado en esta sesión — no se guarda ni se marca asistencia en ningún
-// lado todavía.
-function parseCodigo(valor: string, claseId: string): { correo: string | null; esDeEstaClase: boolean } {
+// La reserva es el boleto: ClassDetailScreen.tsx genera este mismo formato
+// "FEELINGPILATES-RESERVA|<claseReservaId>|<claseId>" al mostrar el QR de una
+// reserva confirmada. El backend valida dueño/estado/ventana de horario en
+// cada escaneo, así que aquí solo se parsea el formato, no se decide nada.
+function parseCodigo(valor: string): { reservaId: string; claseId: string } | null {
   const partes = valor.split('|');
-  if (partes.length === 3 && partes[0] === 'FEELINGPILATES') {
-    return { correo: partes[2], esDeEstaClase: partes[1] === claseId };
+  if (partes.length === 3 && partes[0] === 'FEELINGPILATES-RESERVA') {
+    return { reservaId: partes[1], claseId: partes[2] };
   }
-  return { correo: null, esDeEstaClase: false };
+  return null;
 }
 
 export function InstructorClassCheckInScreen({ navigation, route }: Props) {
-  const activeClase = clases.find(clase => clase.id === route.params.claseId) ?? clases[0];
+  const { token } = useAuth();
+  const [activeClase, setActiveClase] = useState<ClaseResponse | null>(null);
   const device = useCameraDevice('back');
   const isFocused = useIsFocused();
   const { hasPermission, requestPermission } = useCameraPermission();
-  const { registrarAsistencia } = useAttendance();
   const [escaneados, setEscaneados] = useState<Escaneo[]>([]);
   const ultimoValorRef = useRef<string | null>(null);
 
@@ -47,23 +49,41 @@ export function InstructorClassCheckInScreen({ navigation, route }: Props) {
     if (!hasPermission) requestPermission();
   }, [hasPermission, requestPermission]);
 
-  // Compartida entre el escáner real y el botón de prueba temporal de abajo:
-  // así el botón ejerce exactamente el mismo camino de código que un escaneo
-  // real de la cámara, en vez de simular el resultado por separado.
-  const procesarCodigo = (valor: string) => {
-    if (!valor || valor === ultimoValorRef.current) return;
+  useEffect(() => {
+    let cancelado = false;
+    obtenerClase(route.params.claseId)
+      .then(data => {
+        if (!cancelado) setActiveClase(data);
+      })
+      .catch(() => {
+        if (!cancelado) setActiveClase(null);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [route.params.claseId]);
+
+  const procesarCodigo = async (valor: string) => {
+    if (!valor || valor === ultimoValorRef.current || !token) return;
     ultimoValorRef.current = valor;
-    setEscaneados(prev => {
-      if (prev.some(item => item.valor === valor)) return prev;
-      const { correo, esDeEstaClase } = parseCodigo(valor, activeClase.id);
-      const hora = new Date().toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
-      // Todavía no hay sistema real de reservas que diga quién es cada
-      // correo escaneado, así que cada escaneo válido de esta clase marca
-      // como presente a la siguiente persona de la lista de ejemplo (ver
-      // AttendanceContext.tsx e InstructorClassDetailScreen.tsx).
-      if (esDeEstaClase) registrarAsistencia(activeClase.id);
-      return [{ valor, correo, esDeEstaClase, hora }, ...prev];
-    });
+    const hora = new Date().toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
+
+    const parsed = parseCodigo(valor);
+    if (!parsed) {
+      setEscaneados(prev => [{ valor, ok: false, mensaje: 'Código no reconocido', hora }, ...prev]);
+      return;
+    }
+    if (parsed.claseId !== route.params.claseId) {
+      setEscaneados(prev => [{ valor, ok: false, mensaje: 'Ese código no es de esta clase', hora }, ...prev]);
+      return;
+    }
+    try {
+      const resultado = await registrarCheckin(token, parsed.reservaId, parsed.claseId);
+      setEscaneados(prev => [{ valor, ok: true, mensaje: `${resultado.clienteNombre} · presente`, hora }, ...prev]);
+    } catch (err) {
+      const mensaje = err instanceof ApiError ? err.message : 'No se pudo registrar el check-in';
+      setEscaneados(prev => [{ valor, ok: false, mensaje, hora }, ...prev]);
+    }
   };
 
   const codeScanner = useCodeScanner({
@@ -82,9 +102,11 @@ export function InstructorClassCheckInScreen({ navigation, route }: Props) {
         </Pressable>
         <View style={styles.headerTextWrap}>
           <Text style={styles.headerTitle}>Pasar lista por QR</Text>
-          <Text style={styles.headerSubtitle}>
-            {activeClase.nombre} · {activeClase.sala} · {activeClase.hora}
-          </Text>
+          {activeClase && (
+            <Text style={styles.headerSubtitle}>
+              {activeClase.tipoActividadNombre} · {activeClase.salonNombre} · {formatHora(activeClase.horaInicio)}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -118,17 +140,16 @@ export function InstructorClassCheckInScreen({ navigation, route }: Props) {
             </Text>
             {escaneados.slice(0, 4).map(item => (
               <View key={item.valor} style={styles.resultRow}>
-                <CheckCircleIcon
-                  color={item.esDeEstaClase ? colors.spotsAvailable : colors.textMuted}
-                  size={20}
-                />
+                {item.ok ? (
+                  <CheckCircleIcon color={colors.spotsAvailable} size={20} />
+                ) : (
+                  <XCircleIcon color={colors.error} size={20} />
+                )}
                 <View style={styles.resultTextWrap}>
                   <Text style={styles.resultValue} numberOfLines={1}>
-                    {item.correo ?? item.valor}
+                    {item.mensaje}
                   </Text>
-                  <Text style={styles.resultMeta}>
-                    {item.hora} · {item.esDeEstaClase ? 'Reserva de esta clase' : 'No coincide con esta clase'}
-                  </Text>
+                  <Text style={styles.resultMeta}>{item.hora}</Text>
                 </View>
               </View>
             ))}

@@ -36,6 +36,17 @@ export function addDays(date: Date, amount: number): Date {
   return result;
 }
 
+// yyyy-MM-dd en hora local (no toISOString, que convierte a UTC y puede
+// correrse un día para horas cercanas a medianoche). Mismo formato que
+// devuelve el backend para ClaseResponse.fecha, así se pueden comparar como
+// strings sin parsear ida y vuelta.
+export function formatIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -102,6 +113,16 @@ export function parseHora(hora: string): { hours: number; minutes: number } {
   let hours = parseInt(match[1], 10) % 12;
   if (match[3].toLowerCase() === 'pm') hours += 12;
   return { hours, minutes: parseInt(match[2], 10) };
+}
+
+// Convierte una hora del backend tipo "09:00:00" (24h, LocalTime de Java) a
+// "9:00 am" para mostrar en pantalla.
+export function formatHora(hora: string): string {
+  const [hoursStr, minutesStr] = hora.split(':');
+  const hours24 = parseInt(hoursStr, 10);
+  const suffix = hours24 >= 12 ? 'pm' : 'am';
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${hours12}:${minutesStr} ${suffix}`;
 }
 
 // Combina una fecha (solo día) con una hora tipo "8:00 am" en un único Date.

@@ -2,10 +2,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { CarritoProvider } from '../context/CarritoContext';
 import { SportModeProvider } from '../context/SportModeContext';
-import { ReservationsProvider } from '../context/ReservationsContext';
 import { CourtReservationsProvider } from '../context/CourtReservationsContext';
-import { AttendanceProvider } from '../context/AttendanceContext';
 import { SplashScreen } from '../components/SplashScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { MainTabs } from './MainTabs';
@@ -18,6 +17,7 @@ import { InstructorClassDetailScreen } from '../screens/InstructorClassDetailScr
 import { InstructorClassCheckInScreen } from '../screens/InstructorClassCheckInScreen';
 import { CourtBookingScreen } from '../screens/CourtBookingScreen';
 import { CourtBookingConfirmationScreen } from '../screens/CourtBookingConfirmationScreen';
+import { CarritoScreen } from '../screens/CarritoScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,6 +49,7 @@ function Navigator() {
       <Stack.Screen name="InstructorClassCheckIn" component={InstructorClassCheckInScreen} />
       <Stack.Screen name="CourtBooking" component={CourtBookingScreen} />
       <Stack.Screen name="CourtBookingConfirmation" component={CourtBookingConfirmationScreen} />
+      <Stack.Screen name="Carrito" component={CarritoScreen} />
     </Stack.Navigator>
   );
 }
@@ -56,17 +57,15 @@ function Navigator() {
 export function RootNavigator() {
   return (
     <AuthProvider>
-      <SportModeProvider>
-        <ReservationsProvider>
+      <CarritoProvider>
+        <SportModeProvider>
           <CourtReservationsProvider>
-            <AttendanceProvider>
-              <NavigationContainer>
-                <Navigator />
-              </NavigationContainer>
-            </AttendanceProvider>
+            <NavigationContainer>
+              <Navigator />
+            </NavigationContainer>
           </CourtReservationsProvider>
-        </ReservationsProvider>
-      </SportModeProvider>
+        </SportModeProvider>
+      </CarritoProvider>
     </AuthProvider>
   );
 }

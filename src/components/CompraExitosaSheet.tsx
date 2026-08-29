@@ -7,34 +7,55 @@ import type { PaqueteResponse } from '../api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';
 
 type CompraExitosaSheetProps = {
-  paquete: PaqueteResponse | null;
+  paquetes: PaqueteResponse[] | null;
   onClose: () => void;
 };
 
 // Confirmación tras un pago exitoso, mismo lenguaje visual (círculo con check)
 // que CourtBookingConfirmationScreen, en vez del Alert.alert nativo genérico.
-export function CompraExitosaSheet({ paquete, onClose }: CompraExitosaSheetProps) {
+// Acepta varios paquetes porque un checkout de carrito paga N paquetes en un
+// solo PaymentIntent.
+export function CompraExitosaSheet({ paquetes, onClose }: CompraExitosaSheetProps) {
+  const esMultiple = (paquetes?.length ?? 0) > 1;
+  const total = paquetes?.reduce((suma, p) => suma + p.precioCentavos, 0) ?? 0;
+
   return (
-    <Modal visible={paquete !== null} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={paquetes !== null} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.card} onPress={() => {}}>
           <View style={styles.checkCircle}>
             <CheckIcon color={colors.background} size={28} />
           </View>
-          {paquete && (
+          {paquetes && (
             <>
               <Text style={styles.title}>¡Compra exitosa!</Text>
-              <Text style={styles.subtitle}>Ya puedes usar tu paquete "{paquete.nombre}".</Text>
+              <Text style={styles.subtitle}>
+                {esMultiple
+                  ? 'Ya puedes usar tus paquetes.'
+                  : `Ya puedes usar tu paquete "${paquetes[0].nombre}".`}
+              </Text>
 
               <View style={styles.infoList}>
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Pagaste</Text>
-                  <Text style={styles.infoValue}>{formatPrecio(paquete.precioCentavos)}</Text>
-                </View>
-                <View style={[styles.infoRow, styles.infoRowLast]}>
-                  <Text style={styles.infoLabel}>Vigencia</Text>
-                  <Text style={styles.infoValue}>{formatVigencia(paquete.vigenciaDias)}</Text>
-                </View>
+                {paquetes.map((paquete, index) => (
+                  <View
+                    key={paquete.id}
+                    style={[
+                      styles.infoRow,
+                      !esMultiple && index === paquetes.length - 1 && styles.infoRowLast,
+                    ]}>
+                    <View>
+                      <Text style={styles.infoLabel}>{paquete.nombre}</Text>
+                      <Text style={styles.infoSub}>{formatVigencia(paquete.vigenciaDias)}</Text>
+                    </View>
+                    <Text style={styles.infoValue}>{formatPrecio(paquete.precioCentavos)}</Text>
+                  </View>
+                ))}
+                {esMultiple && (
+                  <View style={[styles.infoRow, styles.infoRowLast]}>
+                    <Text style={styles.infoLabel}>Total</Text>
+                    <Text style={styles.infoValue}>{formatPrecio(total)}</Text>
+                  </View>
+                )}
               </View>
 
               <PrimaryButton label="Aceptar" onPress={onClose} />
@@ -92,6 +113,7 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -103,6 +125,11 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontFamily: fontFamily.body,
     fontSize: fontSize.base,
+    color: colors.textMuted,
+  },
+  infoSub: {
+    fontFamily: fontFamily.body,
+    fontSize: fontSize.smMedium,
     color: colors.textMuted,
   },
   infoValue: {

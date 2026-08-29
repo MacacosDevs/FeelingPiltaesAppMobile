@@ -1,15 +1,32 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon, StarIcon } from 'react-native-heroicons/outline';
 import { obtenerPerfilInstructor } from '../api/instructores';
-import type { PerfilInstructorResponse } from '../api/types';
-import { clases, INSTRUCTOR_META, stripCon } from '../data/clases';
+import { listarClasesPublico } from '../api/clases';
+import type { ClaseResponse, PerfilInstructorResponse } from '../api/types';
+import { INSTRUCTOR_META, stripCon } from '../data/clases';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { SocialLinksRow } from '../components/SocialLinksRow';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import { WEEKDAY_LABELS, addDays, mondayOf, startOfDay, weekdayIndexMondayFirst } from '../utils/date';
+import {
+  WEEKDAY_LABELS,
+  addDays,
+  formatHora,
+  formatIsoDate,
+  mondayOf,
+  startOfDay,
+  weekdayIndexMondayFirst,
+} from '../utils/date';
 import type { RootStackParamList } from '../navigation/types';
 
 const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
@@ -26,6 +43,7 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
   // sí son datos reales de la instructora y se traen del backend. Si falla o
   // la instructora no tiene usuarioId, se mantiene lo que ya había en el mock.
   const [perfil, setPerfil] = useState<PerfilInstructorResponse | null>(null);
+  const [refrescando, setRefrescando] = useState(false);
 
   useEffect(() => {
     if (!meta?.usuarioId) return;
@@ -53,14 +71,50 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
       }
     : meta?.redesSociales;
 
-  const classesThisWeek = useMemo(() => {
-    const today = startOfDay(new Date());
-    const weekStart = mondayOf(today);
-    const weekEnd = addDays(weekStart, 7);
-    return clases
-      .filter(clase => clase.instructora === instructora && clase.fecha >= weekStart && clase.fecha < weekEnd)
-      .sort((a, b) => a.fecha.getTime() - b.fecha.getTime() || a.hora.localeCompare(b.hora));
-  }, [instructora]);
+  const [clasesSemana, setClasesSemana] = useState<ClaseResponse[]>([]);
+
+  useEffect(() => {
+    if (!meta?.usuarioId) return;
+    let cancelled = false;
+    const weekStart = mondayOf(startOfDay(new Date()));
+    const weekEnd = addDays(weekStart, 6);
+    listarClasesPublico(formatIsoDate(weekStart), formatIsoDate(weekEnd))
+      .then(data => {
+        if (!cancelled) setClasesSemana(data);
+      })
+      .catch(() => {
+        if (!cancelled) setClasesSemana([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [meta?.usuarioId]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!meta?.usuarioId) return;
+    setRefrescando(true);
+    const weekStart = mondayOf(startOfDay(new Date()));
+    const weekEnd = addDays(weekStart, 6);
+    try {
+      const [perfilData, clases] = await Promise.all([
+        obtenerPerfilInstructor(meta.usuarioId),
+        listarClasesPublico(formatIsoDate(weekStart), formatIsoDate(weekEnd)),
+      ]);
+      setPerfil(perfilData);
+      setClasesSemana(clases);
+    } catch {
+      // Se conserva lo ya cargado si falla el refresco.
+    }
+    setRefrescando(false);
+  }, [meta?.usuarioId]);
+
+  const classesThisWeek = useMemo(
+    () =>
+      clasesSemana
+        .filter(clase => clase.instructorId === meta?.usuarioId)
+        .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio.localeCompare(b.horaInicio)),
+    [clasesSemana, meta?.usuarioId],
+  );
 
   return (
     <SafeAreaView style={commonStyles.screen} edges={['top']}>
@@ -70,7 +124,12 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor={colors.accent} />
+        }>
         <View style={styles.profileHeader}>
           <Image source={perfil?.fotoUrl ? { uri: perfil.fotoUrl } : avatarPlaceholder} style={styles.avatar} />
           <Text style={styles.name}>{name}</Text>
@@ -107,7 +166,8 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
         ) : (
           <View style={styles.scheduleList}>
             {classesThisWeek.map(clase => {
-              const activity = ACTIVITY_META[clase.nombre];
+              const activity = ACTIVITY_META[clase.tipoActividadNombre];
+              const fecha = new Date(`${clase.fecha}T00:00:00`);
               return (
                 <Pressable
                   key={clase.id}
@@ -119,10 +179,10 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
                         <activity.Icon color={colors.background} size={14} />
                       </View>
                     )}
-                    <Text style={styles.scheduleName}>{clase.nombre}</Text>
+                    <Text style={styles.scheduleName}>{clase.tipoActividadNombre}</Text>
                   </View>
                   <Text style={styles.scheduleTime}>
-                    {WEEKDAY_LABELS[weekdayIndexMondayFirst(clase.fecha)]} · {clase.hora}
+                    {WEEKDAY_LABELS[weekdayIndexMondayFirst(fecha)]} · {formatHora(clase.horaInicio)}
                   </Text>
                 </Pressable>
               );

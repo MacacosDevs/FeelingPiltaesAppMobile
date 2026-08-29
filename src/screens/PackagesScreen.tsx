@@ -1,23 +1,18 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useStripe } from '@stripe/stripe-react-native';
 import { PackageCard } from '../components/PackageCard';
 import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
-import { PaqueteDetalleSheet } from '../components/PaqueteDetalleSheet';
-import { CompraExitosaSheet } from '../components/CompraExitosaSheet';
 import { useAuth } from '../context/AuthContext';
+import { useCarrito } from '../context/CarritoContext';
 import { useSportMode } from '../context/SportModeContext';
 import { PadelPackagesScreen } from './PadelPackagesScreen';
 import { listarPaquetes } from '../api/paquetes';
-import { crearIntentoPago } from '../api/pagos';
-import { ApiError } from '../api/client';
 import type { PaqueteResponse } from '../api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';
-import { generarClaveIdempotencia } from '../utils/idempotency';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '../theme';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 
@@ -38,16 +33,11 @@ export function PackagesScreen() {
   const navigation = useNavigation<PackagesNavigationProp>();
   const { user, token } = useAuth();
   const { sport } = useSportMode();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { tieneItem, toggleItem } = useCarrito();
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const [paquetes, setPaquetes] = useState<PaqueteResponse[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [paqueteSeleccionado, setPaqueteSeleccionado] = useState<PaqueteResponse | null>(null);
-  const [procesandoPago, setProcesandoPago] = useState(false);
-  const [compraExitosa, setCompraExitosa] = useState<PaqueteResponse | null>(null);
-  // Una clave por intento de compra (no por cada tap de "Pagar"): si hay que
-  // reintentar tras un timeout, se reusa para que el backend no duplique el pago.
-  const claveIdempotenciaRef = useRef<string | null>(null);
+  const [refrescando, setRefrescando] = useState(false);
 
   useEffect(() => {
     listarPaquetes()
@@ -56,63 +46,23 @@ export function PackagesScreen() {
       .finally(() => setCargando(false));
   }, []);
 
-  const handleElegirPaquete = useCallback(
-    (paquete: PaqueteResponse) => {
-      if (!user || !token) {
-        setAuthGateOpen(true);
-        return;
-      }
-      claveIdempotenciaRef.current = generarClaveIdempotencia();
-      setPaqueteSeleccionado(paquete);
-    },
-    [user, token],
-  );
-
-  const handleCerrarDetalle = useCallback(() => {
-    if (procesandoPago) {
-      return;
-    }
-    claveIdempotenciaRef.current = null;
-    setPaqueteSeleccionado(null);
-  }, [procesandoPago]);
-
-  const handlePagar = useCallback(async () => {
-    if (!token || !paqueteSeleccionado || procesandoPago) {
-      return;
-    }
-    const paquete = paqueteSeleccionado;
-    if (!claveIdempotenciaRef.current) {
-      claveIdempotenciaRef.current = generarClaveIdempotencia();
-    }
-    setProcesandoPago(true);
+  async function handleRefresh() {
+    setRefrescando(true);
     try {
-      const { clientSecret } = await crearIntentoPago(token, paquete.id, claveIdempotenciaRef.current);
-      const { error: initError } = await initPaymentSheet({
-        merchantDisplayName: 'Feeling Pilates',
-        paymentIntentClientSecret: clientSecret,
-        defaultBillingDetails: { address: { country: 'MX' } },
-      });
-      if (initError) {
-        Alert.alert('No se pudo iniciar el pago', initError.message);
-        return;
-      }
-      const { error: presentError } = await presentPaymentSheet();
-      if (presentError) {
-        if (presentError.code !== 'Canceled') {
-          Alert.alert('No se completó el pago', presentError.message);
-        }
-        return;
-      }
-      claveIdempotenciaRef.current = null;
-      setPaqueteSeleccionado(null);
-      setCompraExitosa(paquete);
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Ocurrió un error inesperado';
-      Alert.alert('No se pudo iniciar el pago', message);
-    } finally {
-      setProcesandoPago(false);
+      setPaquetes(await listarPaquetes());
+    } catch {
+      // Se conservan los paquetes ya cargados si falla el refresco.
     }
-  }, [token, paqueteSeleccionado, procesandoPago, initPaymentSheet, presentPaymentSheet]);
+    setRefrescando(false);
+  }
+
+  function handleToggleCarrito(paquete: PaqueteResponse) {
+    if (!user || !token) {
+      setAuthGateOpen(true);
+      return;
+    }
+    toggleItem(paquete);
+  }
 
   if (sport === 'padel') {
     return <PadelPackagesScreen />;
@@ -126,7 +76,11 @@ export function PackagesScreen() {
 
   return (
     <SafeAreaView style={commonStyles.screen} edges={[]}>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        refreshControl={
+          <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor={colors.accent} />
+        }>
         <View style={styles.header}>
           <Text style={styles.title}>Paquetes</Text>
           <Text style={styles.subtitle}>Elige el que se ajuste a tu ritmo</Text>
@@ -150,7 +104,8 @@ export function PackagesScreen() {
                     unitario={paquete.unitarioTexto ?? ''}
                     descripcion={paquete.descripcion ?? undefined}
                     destacado={paquete.destacado}
-                    onPress={() => handleElegirPaquete(paquete)}
+                    seleccionado={tieneItem(paquete.id)}
+                    onPress={() => handleToggleCarrito(paquete)}
                   />
                 ))}
               </View>
@@ -172,15 +127,6 @@ export function PackagesScreen() {
           navigation.navigate('Auth', { mode: 'login' });
         }}
       />
-
-      <PaqueteDetalleSheet
-        paquete={paqueteSeleccionado}
-        procesando={procesandoPago}
-        onClose={handleCerrarDetalle}
-        onPagar={handlePagar}
-      />
-
-      <CompraExitosaSheet paquete={compraExitosa} onClose={() => setCompraExitosa(null)} />
     </SafeAreaView>
   );
 }

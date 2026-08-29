@@ -1,16 +1,34 @@
-import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useAuth } from '../context/AuthContext';
-import { clases, stripCon, type Clase } from '../data/clases';
+import { listarMisClasesInstructor } from '../api/clases';
+import type { ClaseResponse } from '../api/types';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { CapacityIndicator } from '../components/CapacityIndicator';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import { WEEKDAY_LABELS, addDays, isSameDay, mondayOf, startOfDay, weekdayIndexMondayFirst } from '../utils/date';
+import {
+  WEEKDAY_LABELS,
+  addDays,
+  formatHora,
+  formatIsoDate,
+  isSameDay,
+  mondayOf,
+  startOfDay,
+  weekdayIndexMondayFirst,
+} from '../utils/date';
 import type { InstructorTabParamList, RootStackParamList } from '../navigation/types';
 
 type NavigationProp = CompositeNavigationProp<
@@ -20,45 +38,85 @@ type NavigationProp = CompositeNavigationProp<
 
 type DayGroup = {
   date: Date;
-  items: Clase[];
+  items: ClaseResponse[];
 };
 
-// El horario todavía vive en el mock local (src/data/clases.ts) — no existe
-// todavía un módulo de clases en el backend. Se filtra por nombre: el
-// `instructora` del mock es "Con <nombre>" y debe coincidir con el nombre del
-// usuario logueado (así están sembrados los 4 instructores de prueba, ver
-// V18__instructores_semilla.sql en el backend).
 export function InstructorCalendarScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuth();
+  const { token } = useAuth();
   const today = startOfDay(new Date());
+  const [misClases, setMisClases] = useState<ClaseResponse[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [refrescando, setRefrescando] = useState(false);
+
+  const cargarMisClases = useCallback(() => {
+    const weekStart = mondayOf(today);
+    const weekEnd = addDays(weekStart, 6);
+    return listarMisClasesInstructor(token!, formatIsoDate(weekStart), formatIsoDate(weekEnd));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setMisClases([]);
+      setCargando(false);
+      return;
+    }
+    let cancelado = false;
+    setCargando(true);
+    cargarMisClases()
+      .then(data => {
+        if (!cancelado) setMisClases(data);
+      })
+      .catch(() => {
+        if (!cancelado) setMisClases([]);
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [token, cargarMisClases]);
+
+  async function handleRefresh() {
+    if (!token) return;
+    setRefrescando(true);
+    try {
+      setMisClases(await cargarMisClases());
+    } catch {
+      // Se conservan las clases ya cargadas si falla el refresco.
+    }
+    setRefrescando(false);
+  }
 
   const dayGroups = useMemo<DayGroup[]>(() => {
-    if (!user) return [];
-    const weekStart = mondayOf(today);
-    const weekEnd = addDays(weekStart, 7);
-    const misClases = clases
-      .filter(clase => stripCon(clase.instructora) === user.nombre && clase.fecha >= weekStart && clase.fecha < weekEnd)
-      .sort((a, b) => a.fecha.getTime() - b.fecha.getTime() || a.hora.localeCompare(b.hora));
-
+    const ordenadas = [...misClases].sort(
+      (a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio.localeCompare(b.horaInicio),
+    );
     const groups: DayGroup[] = [];
-    for (const clase of misClases) {
+    for (const clase of ordenadas) {
+      const fecha = new Date(`${clase.fecha}T00:00:00`);
       const last = groups[groups.length - 1];
-      if (last && isSameDay(last.date, clase.fecha)) {
+      if (last && isSameDay(last.date, fecha)) {
         last.items.push(clase);
       } else {
-        groups.push({ date: clase.fecha, items: [clase] });
+        groups.push({ date: fecha, items: [clase] });
       }
     }
     return groups;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [misClases]);
 
   const totalClasesSemana = dayGroups.reduce((total, group) => total + group.items.length, 0);
 
   return (
     <SafeAreaView style={commonStyles.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor={colors.accent} />
+        }>
         <Text style={styles.title}>Mi calendario</Text>
         <Text style={styles.subtitle}>
           {totalClasesSemana === 0
@@ -66,7 +124,9 @@ export function InstructorCalendarScreen() {
             : `${totalClasesSemana} clase${totalClasesSemana === 1 ? '' : 's'} asignada${totalClasesSemana === 1 ? '' : 's'} esta semana`}
         </Text>
 
-        {dayGroups.length === 0 ? (
+        {cargando ? (
+          <ActivityIndicator color={colors.accent} />
+        ) : dayGroups.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>No tienes clases asignadas esta semana.</Text>
           </View>
@@ -87,7 +147,7 @@ export function InstructorCalendarScreen() {
 
                 <View style={styles.classList}>
                   {group.items.map((clase, index) => {
-                    const activity = ACTIVITY_META[clase.nombre];
+                    const activity = ACTIVITY_META[clase.tipoActividadNombre];
                     return (
                       <Pressable
                         key={clase.id}
@@ -100,9 +160,9 @@ export function InstructorCalendarScreen() {
                             </View>
                           )}
                           <View style={styles.classCardInfo}>
-                            <Text style={styles.className}>{clase.nombre}</Text>
+                            <Text style={styles.className}>{clase.tipoActividadNombre}</Text>
                             <Text style={styles.classMeta}>
-                              {clase.hora} · {clase.duracion} · {clase.sala}
+                              {formatHora(clase.horaInicio)} - {formatHora(clase.horaFin)} · {clase.salonNombre}
                             </Text>
                           </View>
                           <ChevronRightIcon color={colors.navInactive} size={18} />

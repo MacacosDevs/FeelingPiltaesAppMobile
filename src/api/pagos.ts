@@ -3,13 +3,13 @@ import type { CompraResponse, CrearPagoResponse, PaqueteActivoResponse } from '.
 
 export function crearIntentoPago(
   token: string,
-  paqueteId: string,
+  paqueteIds: string[],
   idempotencyKey: string,
 ): Promise<CrearPagoResponse> {
-  return apiFetch<CrearPagoResponse>(`/api/pagos/paquetes/${paqueteId}/intento`, {
+  return apiFetch<CrearPagoResponse>('/api/pagos/paquetes/intento', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ idempotencyKey }),
+    body: JSON.stringify({ paqueteIds, idempotencyKey }),
   });
 }
 

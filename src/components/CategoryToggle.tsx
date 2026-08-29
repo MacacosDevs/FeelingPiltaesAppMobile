@@ -33,23 +33,26 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRadius: radius.pill,
     backgroundColor: colors.chipBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   option: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: radius.pill,
   },
   optionActive: {
-    backgroundColor: colors.textPrimary,
-    ...shadows.pill,
+    backgroundColor: colors.accent,
+    ...shadows.card,
   },
   label: {
     fontFamily: fontFamily.body,
     fontSize: fontSize.base,
     color: colors.textMuted,
+    fontWeight: fontWeight.medium,
   },
   labelActive: {
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semibold,
     color: colors.surface,
   },
 });

@@ -3,8 +3,10 @@ import {
   ActivityIndicator,
   GestureResponderEvent,
   Pressable,
+  StyleProp,
   StyleSheet,
   Text,
+  ViewStyle,
 } from 'react-native';
 import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
 
@@ -13,17 +15,29 @@ type PrimaryButtonProps = {
   onPress?: (event: GestureResponderEvent) => void;
   loading?: boolean;
   disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
+  icon?: React.ReactNode;
 };
 
-export function PrimaryButton({ label, onPress, loading = false, disabled = false }: PrimaryButtonProps) {
+export function PrimaryButton({
+  label,
+  onPress,
+  loading = false,
+  disabled = false,
+  style,
+  icon,
+}: PrimaryButtonProps) {
   return (
     <Pressable
-      style={[styles.button, (disabled || loading) && styles.buttonDisabled]}
+      style={[styles.button, (disabled || loading) && styles.buttonDisabled, style]}
       onPress={loading || disabled ? undefined : onPress}>
       {loading ? (
-        <ActivityIndicator color={colors.background} />
+        <ActivityIndicator color={colors.surface} />
       ) : (
-        <Text style={styles.label}>{label}</Text>
+        <>
+          {icon}
+          <Text style={styles.label}>{label}</Text>
+        </>
       )}
     </Pressable>
   );
@@ -31,19 +45,30 @@ export function PrimaryButton({ label, onPress, loading = false, disabled = fals
 
 const styles = StyleSheet.create({
   button: {
-    height: 46,
-    borderRadius: radius.input,
-    backgroundColor: colors.textPrimary,
+    height: 50,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 22,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 3,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.55,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   label: {
-    color: colors.background,
+    color: colors.surface,
     fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.md + 1,
+    letterSpacing: 0.2,
   },
 });

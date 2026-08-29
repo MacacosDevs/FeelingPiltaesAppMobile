@@ -1,5 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -9,8 +17,9 @@ import { ClassFilterModal, type FilterOption } from '../components/ClassFilterMo
 import { CalendarModal } from '../components/CalendarModal';
 import { CategoryToggle } from '../components/CategoryToggle';
 import { CapacityIndicator } from '../components/CapacityIndicator';
-import { clases, isClasePast, type Categoria } from '../data/clases';
-import { paqueteActivoDe, useMisPaquetesActivos } from '../hooks/useMisPaquetesActivos';
+import { isClasePast, type Categoria } from '../data/clases';
+import { listarClasesPublico } from '../api/clases';
+import type { ClaseResponse } from '../api/types';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { useSportMode } from '../context/SportModeContext';
 import { CourtsScreen } from './CourtsScreen';
@@ -19,6 +28,8 @@ import {
   WEEKDAY_LABELS,
   addDays,
   formatFullDate,
+  formatHora,
+  formatIsoDate,
   formatMonthYearLong,
   isSameDay,
   mondayOf,
@@ -28,15 +39,23 @@ import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 
 const DAYS_IN_STRIP = 7;
 
+// Bacu Fit no existe todavía en el catálogo real de actividades del backend
+// (sigue fuera de alcance); mientras tanto, cualquier actividad que no sea
+// "Bacu Fit" cuenta como Pilates para el toggle de categoría.
+const NOMBRE_ACTIVIDAD_BACU_FIT = 'Bacu Fit';
+
 const TIPO_OPTIONS: FilterOption[] = [
   { value: 'Reformer', label: 'Reformer', description: 'Fuerza y control con máquina' },
-  { value: 'Barre Sculpt', label: 'Barre Sculpt', description: 'Tonificación con barra' },
-  { value: 'Mat Pilates', label: 'Mat Pilates', description: 'En colchoneta, bajo impacto' },
+  { value: 'Mat', label: 'Mat', description: 'En colchoneta, bajo impacto' },
+  { value: 'Cadillac', label: 'Cadillac' },
+  { value: 'Silla', label: 'Silla' },
+  { value: 'Barril', label: 'Barril' },
+  { value: 'Circuito', label: 'Circuito' },
 ];
 
 const SALON_OPTIONS: FilterOption[] = [
-  { value: 'Studio 14', label: 'Studio 14' },
-  { value: 'Studio Roma', label: 'Studio Roma' },
+  { value: 'Feeling Pilates Centro', label: 'Feeling Pilates Centro' },
+  { value: 'Feeling Pilates Corregidora', label: 'Feeling Pilates Corregidora' },
 ];
 
 const today = startOfDay(new Date());
@@ -56,7 +75,9 @@ export function ClassesScreen() {
   const [selectedSalones, setSelectedSalones] = useState<string[]>([]);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const paquetesActivos = useMisPaquetesActivos();
+  const [clasesSemana, setClasesSemana] = useState<ClaseResponse[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [refrescando, setRefrescando] = useState(false);
 
   const activeFilterCount = selectedTipos.length + selectedSalones.length;
   const tipoOptions = categoria === 'pilates' ? TIPO_OPTIONS : [];
@@ -66,17 +87,53 @@ export function ClassesScreen() {
     [weekStart],
   );
 
-  const classesForSelectedDay = useMemo(
-    () =>
-      clases.filter(
-        clase =>
-          clase.categoria === categoria &&
-          isSameDay(clase.fecha, selectedDate) &&
-          (selectedSalones.length === 0 || selectedSalones.includes(clase.sala)) &&
-          (selectedTipos.length === 0 || selectedTipos.includes(clase.nombre)),
-      ),
-    [categoria, selectedDate, selectedSalones, selectedTipos],
-  );
+  const cargarClasesSemana = useCallback(() => {
+    const desde = formatIsoDate(weekStart);
+    const hasta = formatIsoDate(addDays(weekStart, DAYS_IN_STRIP - 1));
+    return listarClasesPublico(desde, hasta);
+  }, [weekStart]);
+
+  useEffect(() => {
+    let cancelado = false;
+    setCargando(true);
+    cargarClasesSemana()
+      .then(data => {
+        if (!cancelado) setClasesSemana(data);
+      })
+      .catch(() => {
+        if (!cancelado) setClasesSemana([]);
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [cargarClasesSemana]);
+
+  async function handleRefresh() {
+    setRefrescando(true);
+    try {
+      const data = await cargarClasesSemana();
+      setClasesSemana(data);
+    } catch {
+      // Se conservan las clases ya cargadas si falla el refresco.
+    }
+    setRefrescando(false);
+  }
+
+  const classesForSelectedDay = useMemo(() => {
+    const selectedIso = formatIsoDate(selectedDate);
+    return clasesSemana.filter(clase => {
+      const esBacuFit = clase.tipoActividadNombre === NOMBRE_ACTIVIDAD_BACU_FIT;
+      return (
+        (categoria === 'bacufit') === esBacuFit &&
+        clase.fecha === selectedIso &&
+        (selectedSalones.length === 0 || selectedSalones.includes(clase.salonNombre)) &&
+        (selectedTipos.length === 0 || selectedTipos.includes(clase.tipoActividadNombre))
+      );
+    });
+  }, [categoria, clasesSemana, selectedDate, selectedSalones, selectedTipos]);
 
   const emptyStateMessage = useMemo(() => {
     const filtros: string[] = [];
@@ -88,10 +145,12 @@ export function ClassesScreen() {
 
   function goToPreviousWeek() {
     setWeekStart(prev => addDays(prev, -7));
+    setSelectedDate(prev => addDays(prev, -7));
   }
 
   function goToNextWeek() {
     setWeekStart(prev => addDays(prev, 7));
+    setSelectedDate(prev => addDays(prev, 7));
   }
 
   function goToToday() {
@@ -110,7 +169,11 @@ export function ClassesScreen() {
 
   return (
     <SafeAreaView style={commonStyles.screen} edges={[]}>
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        refreshControl={
+          <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor={colors.accent} />
+        }>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Horario</Text>
           <CategoryToggle
@@ -169,14 +232,16 @@ export function ClassesScreen() {
 
         <Text style={styles.sectionLabel}>{formatFullDate(selectedDate)}</Text>
 
-        {classesForSelectedDay.length === 0 ? (
+        {cargando ? (
+          <ActivityIndicator color={colors.accent} />
+        ) : classesForSelectedDay.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>{emptyStateMessage}</Text>
           </View>
         ) : (
           <View style={styles.classList}>
             {classesForSelectedDay.map(clase => {
-              const activity = ACTIVITY_META[clase.nombre];
+              const activity = ACTIVITY_META[clase.tipoActividadNombre];
               const past = isClasePast(clase);
               return (
                 <Pressable
@@ -193,10 +258,10 @@ export function ClassesScreen() {
                     )}
 
                     <View style={styles.midCol}>
-                      <Text style={styles.className}>{clase.nombre}</Text>
-                      <Text style={styles.classInstructora}>{clase.instructora}</Text>
+                      <Text style={styles.className}>{clase.tipoActividadNombre}</Text>
+                      <Text style={styles.classInstructora}>Con {clase.instructorNombre}</Text>
                       <Text style={styles.classMeta}>
-                        {clase.sala} · {clase.hora} · {clase.duracion}
+                        {clase.salonNombre} · {formatHora(clase.horaInicio)} - {formatHora(clase.horaFin)}
                       </Text>
                       {!past && (
                         <View style={styles.capacityRow}>
@@ -206,9 +271,6 @@ export function ClassesScreen() {
                     </View>
 
                     <View style={styles.rightCol}>
-                      {!paqueteActivoDe(paquetesActivos, clase.categoria) && (
-                        <Text style={styles.classPrecio}>{clase.precio}</Text>
-                      )}
                       {past ? (
                         <View style={styles.pastBadge}>
                           <Text style={styles.pastBadgeLabel}>Finalizada</Text>
@@ -358,52 +420,56 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: radius.input,
+    paddingVertical: 10,
+    borderRadius: radius.category,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    gap: 2,
+    gap: 3,
   },
   dayCellActive: {
     borderWidth: 0,
-    backgroundColor: colors.textPrimary,
+    backgroundColor: colors.accent,
+    ...shadows.card,
   },
   dayLabel: {
     fontFamily: fontFamily.body,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     color: colors.textMuted,
   },
   dayLabelActive: {
-    color: colors.borderStrong,
+    color: colors.surface,
+    fontWeight: fontWeight.medium,
   },
   dayDate: {
     fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semibold,
     fontSize: fontSize.md,
     color: colors.textPrimary,
   },
   dayDateActive: {
-    color: colors.background,
+    color: colors.surface,
+    fontWeight: fontWeight.bold,
   },
   sectionLabel: {
     fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.sm,
-    color: colors.gold,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.xs + 2,
+    color: colors.accent,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   classList: {
     gap: 12,
   },
   classCard: {
     flexDirection: 'row',
-    borderRadius: radius.input,
+    borderRadius: radius.card,
     overflow: 'hidden',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.listCard,
+    ...shadows.card,
   },
   classCardPast: {
     opacity: 0.55,
@@ -420,8 +486,8 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   classIconWrap: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -431,16 +497,16 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   className: {
-    fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.classTitle,
+    fontFamily: fontFamily.display,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.classTitle + 1,
     color: colors.textPrimary,
   },
   classInstructora: {
     fontFamily: fontFamily.body,
     fontWeight: fontWeight.medium,
     fontSize: fontSize.base,
-    color: colors.gold,
+    color: colors.goldDark,
   },
   classMeta: {
     fontFamily: fontFamily.body,
@@ -464,21 +530,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    height: 30,
-    paddingHorizontal: 12,
-    borderRadius: radius.input,
-    backgroundColor: colors.textPrimary,
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
   },
   reservarLabel: {
     fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.smMedium,
-    color: colors.background,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.xs + 2,
+    color: colors.surface,
   },
   pastBadge: {
-    height: 30,
+    height: 32,
     paddingHorizontal: 12,
-    borderRadius: radius.input,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     alignItems: 'center',
@@ -495,7 +561,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 36,
     paddingHorizontal: 20,
-    borderRadius: radius.input,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,

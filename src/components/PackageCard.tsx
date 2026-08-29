@@ -9,6 +9,8 @@ type PackageCardProps = {
   unitario: string;
   descripcion?: string;
   destacado?: boolean;
+  seleccionado?: boolean;
+  ctaLabel?: string;
   onPress?: (event: GestureResponderEvent) => void;
 };
 
@@ -19,10 +21,13 @@ export function PackageCard({
   unitario,
   descripcion,
   destacado = false,
+  seleccionado = false,
+  ctaLabel,
   onPress,
 }: PackageCardProps) {
+  const label = ctaLabel ?? (seleccionado ? 'Quitar del carrito' : 'Agregar al carrito');
   return (
-    <View style={[styles.card, destacado && styles.cardDestacado]}>
+    <View style={[styles.card, destacado && styles.cardDestacado, seleccionado && styles.cardSeleccionado]}>
       {destacado && (
         <View style={styles.badge}>
           <Text style={styles.badgeLabel}>Más popular</Text>
@@ -44,11 +49,17 @@ export function PackageCard({
         style={({ pressed }) => [
           styles.cta,
           destacado ? styles.ctaDestacado : styles.ctaDefault,
+          seleccionado && styles.ctaSeleccionado,
           pressed && styles.ctaPressed,
         ]}
         onPress={onPress}>
-        <Text style={[styles.ctaLabel, destacado ? styles.ctaLabelDestacado : styles.ctaLabelDefault]}>
-          Elegir paquete
+        <Text
+          style={[
+            styles.ctaLabel,
+            destacado ? styles.ctaLabelDestacado : styles.ctaLabelDefault,
+            seleccionado && styles.ctaLabelSeleccionado,
+          ]}>
+          {label}
         </Text>
       </Pressable>
     </View>
@@ -57,28 +68,30 @@ export function PackageCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.input,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    paddingHorizontal: 18,
-    paddingTop: 20,
-    paddingBottom: 16,
-    gap: 4,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 18,
+    gap: 6,
     ...shadows.card,
   },
   cardDestacado: {
-    borderWidth: 0,
-    backgroundColor: colors.textPrimary,
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.surface,
+  },
+  cardSeleccionado: {
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   badge: {
     position: 'absolute',
     top: -12,
     right: 18,
-    backgroundColor: colors.gold,
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -86,13 +99,13 @@ const styles = StyleSheet.create({
   badgeLabel: {
     fontFamily: fontFamily.body,
     fontWeight: fontWeight.semibold,
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
+    fontSize: fontSize.xs + 1,
+    color: colors.surface,
   },
   nombre: {
-    fontFamily: fontFamily.body,
+    fontFamily: fontFamily.display,
     fontWeight: fontWeight.semibold,
-    fontSize: fontSize.md,
+    fontSize: fontSize.lg - 2,
     color: colors.textPrimary,
   },
   vigencia: {
@@ -103,21 +116,22 @@ const styles = StyleSheet.create({
   descripcion: {
     fontFamily: fontFamily.body,
     fontSize: fontSize.base,
-    color: colors.textMuted,
-    marginTop: 4,
+    color: colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 18,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 6,
-    marginTop: 8,
-    marginBottom: 12,
+    marginTop: 6,
+    marginBottom: 8,
   },
   precio: {
     fontFamily: fontFamily.display,
-    fontWeight: fontWeight.semibold,
-    fontSize: fontSize.heading,
-    color: colors.textPrimary,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.heading + 2,
+    color: colors.accent,
   },
   unitario: {
     fontFamily: fontFamily.body,
@@ -125,36 +139,45 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   textOnDark: {
-    color: colors.background,
+    color: colors.textPrimary,
   },
   textMetaOnDark: {
-    color: colors.borderStrong,
+    color: colors.textMuted,
   },
   cta: {
-    height: 42,
-    borderRadius: radius.input,
+    height: 46,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 6,
   },
   ctaDefault: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
   },
   ctaDestacado: {
-    backgroundColor: colors.gold,
+    backgroundColor: colors.accent,
+  },
+  ctaSeleccionado: {
+    backgroundColor: colors.textPrimary,
+    borderWidth: 0,
   },
   ctaPressed: {
     opacity: 0.85,
   },
   ctaLabel: {
     fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semibold,
     fontSize: fontSize.md,
   },
   ctaLabelDefault: {
     color: colors.textPrimary,
   },
   ctaLabelDestacado: {
-    color: colors.textPrimary,
+    color: colors.surface,
+  },
+  ctaLabelSeleccionado: {
+    color: colors.surface,
   },
 });

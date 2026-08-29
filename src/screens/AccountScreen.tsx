@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -12,10 +12,9 @@ import { useAuth } from '../context/AuthContext';
 import { resolveMediaUrl } from '../utils/media';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { useSportMode } from '../context/SportModeContext';
-import { useReservations } from '../context/ReservationsContext';
+import { useMisReservas } from '../hooks/useMisReservas';
 import { PadelAccountScreen } from './PadelAccountScreen';
 import { paqueteActivoDe, useMisCompras, useMisPaquetesActivos } from '../hooks/useMisPaquetesActivos';
-import { clases } from '../data/clases';
 import { formatDayMonth, formatShortDate } from '../utils/date';
 import { formatPrecio } from '../utils/money';
 import type { CompraResponse } from '../api/types';
@@ -38,16 +37,21 @@ export function AccountScreen() {
   const { user, logout, photoVersion } = useAuth();
   const navigation = useNavigation<AccountNavigationProp>();
   const { sport } = useSportMode();
-  const { reservedClaseIds } = useReservations();
+  const { reservas: historial, recargar: recargarReservas } = useMisReservas();
   const avatarUri = resolveMediaUrl(user?.fotoUrl, photoVersion);
-  const paquetesActivos = useMisPaquetesActivos();
-  const compras = useMisCompras();
+  const { paquetes: paquetesActivos, recargar: recargarPaquetes } = useMisPaquetesActivos();
+  const { compras, recargar: recargarCompras } = useMisCompras();
+  const [refrescando, setRefrescando] = useState(false);
 
-  // El historial se arma a partir de las clases reservadas en esta sesión
-  // (no existe todavía un backend de reservas que las persista).
-  const historial = reservedClaseIds
-    .map(claseId => clases.find(clase => clase.id === claseId))
-    .filter((clase): clase is (typeof clases)[number] => !!clase);
+  function handleRefresh() {
+    setRefrescando(true);
+    recargarReservas();
+    recargarPaquetes();
+    recargarCompras();
+    // Los hooks no exponen su propio estado de carga; se da tiempo a que la
+    // petición vuelva antes de ocultar el indicador de refresco.
+    setTimeout(() => setRefrescando(false), 600);
+  }
 
   if (!user) {
     return (
@@ -68,7 +72,11 @@ export function AccountScreen() {
 
   return (
     <SafeAreaView style={commonStyles.screen} edges={[]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor={colors.accent} />
+        }>
         <View style={styles.profileSection}>
           <View style={styles.profileRow}>
             <View style={styles.avatarRing}>
@@ -122,26 +130,28 @@ export function AccountScreen() {
             </View>
           ) : (
             <View style={styles.historyCard}>
-              {historial.map((clase, index) => {
-                const meta = ACTIVITY_META[clase.nombre];
+              {historial.map((reserva, index) => {
+                const meta = ACTIVITY_META[reserva.clase.tipoActividadNombre];
                 const Icon = meta?.Icon;
                 return (
                   <Pressable
-                    key={clase.id}
+                    key={reserva.id}
                     style={[
                       styles.historyRow,
                       index === historial.length - 1 && styles.historyRowLast,
                     ]}
-                    onPress={() => navigation.navigate('ClassDetail', { claseId: clase.id })}>
+                    onPress={() => navigation.navigate('ClassDetail', { claseId: reserva.clase.id })}>
                     <View style={styles.historyClaseRow}>
                       {Icon && (
                         <View style={[styles.historyIconWrap, { backgroundColor: `${meta.color}1f` }]}>
                           <Icon color={meta.color} size={16} />
                         </View>
                       )}
-                      <Text style={styles.historyClase}>{clase.nombre}</Text>
+                      <Text style={styles.historyClase}>{reserva.clase.tipoActividadNombre}</Text>
                     </View>
-                    <Text style={styles.historyFecha}>{formatShortDate(clase.fecha)}</Text>
+                    <Text style={styles.historyFecha}>
+                      {formatShortDate(new Date(`${reserva.clase.fecha}T00:00:00`))}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -217,27 +227,27 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: fontFamily.display,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.lg + 2,
     color: colors.textPrimary,
-    textTransform: 'uppercase',
   },
   email: {
     fontFamily: fontFamily.body,
     fontSize: fontSize.base,
     color: colors.textMuted,
-    marginTop: 4,
+    marginTop: 2,
   },
   editChip: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.pillBorder,
+    backgroundColor: colors.surface,
   },
   editChipPressed: {
     backgroundColor: colors.chipBackground,
@@ -249,17 +259,19 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   packageCard: {
-    backgroundColor: colors.textPrimary,
-    borderRadius: radius.input,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 18,
     gap: 6,
-    ...shadows.elevatedCard,
+    ...shadows.card,
   },
   packageName: {
-    fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.md,
-    color: colors.background,
+    fontFamily: fontFamily.display,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.md + 2,
+    color: colors.textPrimary,
   },
   packageMeta: {
     fontFamily: fontFamily.body,
@@ -270,28 +282,28 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
   progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.chipBackground,
     marginTop: 6,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: radius.pill,
     backgroundColor: colors.accent,
   },
   sectionLabel: {
     fontFamily: fontFamily.body,
-    fontWeight: fontWeight.medium,
-    fontSize: fontSize.smMedium,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.xs + 2,
     color: colors.accent,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   historyEmpty: {
-    borderRadius: radius.input,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -307,11 +319,11 @@ const styles = StyleSheet.create({
   },
   historyCard: {
     backgroundColor: colors.surface,
-    borderRadius: radius.input,
+    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 16,
-    ...shadows.subtleCard,
+    ...shadows.card,
   },
   historyRow: {
     flexDirection: 'row',

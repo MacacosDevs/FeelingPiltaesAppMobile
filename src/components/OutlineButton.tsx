@@ -30,22 +30,25 @@ export function OutlineButton({ label, onPress, icon, disabled = false, style }:
 
 const styles = StyleSheet.create({
   button: {
-    height: 46,
+    height: 50,
     flexDirection: 'row',
     gap: 8,
-    borderRadius: radius.input,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.55,
   },
   label: {
     color: colors.textPrimary,
     fontFamily: fontFamily.body,
     fontWeight: fontWeight.medium,
     fontSize: fontSize.md,
+    letterSpacing: 0.1,
   },
 });

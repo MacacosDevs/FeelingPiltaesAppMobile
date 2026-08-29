@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { obtenerMisCompras, obtenerMisPaquetesActivos } from '../api/pagos';
 import type { CompraResponse, PaqueteActivoResponse } from '../api/types';
@@ -15,9 +15,13 @@ export function paqueteActivoDe(
   return paquetes.find(p => p.categoria === categoriaBackend);
 }
 
-export function useMisPaquetesActivos(): PaqueteActivoResponse[] {
+export function useMisPaquetesActivos(): {
+  paquetes: PaqueteActivoResponse[];
+  recargar: () => void;
+} {
   const { token } = useAuth();
   const [paquetes, setPaquetes] = useState<PaqueteActivoResponse[]>([]);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     if (!token) {
@@ -35,14 +39,17 @@ export function useMisPaquetesActivos(): PaqueteActivoResponse[] {
     return () => {
       cancelado = true;
     };
-  }, [token]);
+  }, [token, version]);
 
-  return paquetes;
+  const recargar = useCallback(() => setVersion(v => v + 1), []);
+
+  return { paquetes, recargar };
 }
 
-export function useMisCompras(): CompraResponse[] {
+export function useMisCompras(): { compras: CompraResponse[]; recargar: () => void } {
   const { token } = useAuth();
   const [compras, setCompras] = useState<CompraResponse[]>([]);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     if (!token) {
@@ -60,7 +67,9 @@ export function useMisCompras(): CompraResponse[] {
     return () => {
       cancelado = true;
     };
-  }, [token]);
+  }, [token, version]);
 
-  return compras;
+  const recargar = useCallback(() => setVersion(v => v + 1), []);
+
+  return { compras, recargar };
 }

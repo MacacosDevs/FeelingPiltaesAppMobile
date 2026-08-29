@@ -73,7 +73,7 @@ export type CompraResponse = {
 };
 
 export type CrearPagoResponse = {
-  compraId: string;
+  compraIds: string[];
   clientSecret: string;
   publishableKey: string;
 };
@@ -96,4 +96,31 @@ export type ActualizarPerfilInstructorRequest = {
   facebookUrl: string | null;
   tiktokUrl: string | null;
   whatsappUrl: string | null;
+};
+
+export type ClaseResponse = {
+  id: string;
+  salonId: string;
+  salonNombre: string;
+  tipoActividadId: string;
+  tipoActividadNombre: string;
+  instructorId: string;
+  instructorNombre: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  capacidad: number;
+  lugaresOcupados: number;
+  estado: 'PROGRAMADA' | 'CANCELADA';
+};
+
+export type ClaseReservaResponse = {
+  id: string;
+  clienteId: string;
+  clienteNombre: string;
+  clienteCorreo: string;
+  estado: 'CONFIRMADA' | 'CANCELADA' | 'ASISTIO';
+  asistioEn: string | null;
+  creadoEn: string;
+  clase: ClaseResponse;
 };

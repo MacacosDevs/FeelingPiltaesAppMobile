@@ -28,4 +28,5 @@ export type RootStackParamList = {
     duracionMin: number;
     modalidad: 'Individual' | 'Dobles';
   };
+  Carrito: undefined;
 };
