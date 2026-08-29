@@ -1,4 +1,4 @@
-import { ApiError } from '../api/client';
+import { ApiError } from '@/api/client';
 
 export type AuthErrorMap = {
   correoError: string | null;

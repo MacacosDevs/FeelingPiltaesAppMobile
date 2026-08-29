@@ -15,7 +15,7 @@ import {
   horarioById,
   horarios,
 } from '../data/canchas';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { useCourtReservations } from '../context/CourtReservationsContext';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';

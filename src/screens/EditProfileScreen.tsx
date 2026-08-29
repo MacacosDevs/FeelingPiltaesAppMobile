@@ -16,7 +16,7 @@ import { XMarkIcon, CameraIcon } from 'react-native-heroicons/outline';
 import { TextField } from '../components/TextField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Avatar } from '../components/Avatar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { ApiError } from '../api/client';
 import { resolveMediaUrl } from '../utils/media';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';

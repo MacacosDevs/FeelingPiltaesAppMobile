@@ -7,7 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PencilSquareIcon } from 'react-native-heroicons/outline';
 import { Avatar } from '../components/Avatar';
 import { OutlineButton } from '../components/OutlineButton';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { resolveMediaUrl } from '../utils/media';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import type { InstructorTabParamList, RootStackParamList } from '@/app/navigation/types';

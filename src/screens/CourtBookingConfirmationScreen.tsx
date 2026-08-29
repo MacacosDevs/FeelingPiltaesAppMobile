@@ -5,7 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CheckIcon } from 'react-native-heroicons/outline';
 import QRCode from 'react-native-qrcode-svg';
 import { canchaById, horarioById, horarios } from '../data/canchas';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';
 import { formatFullDate } from '../utils/date';
 import type { RootStackParamList } from '@/app/navigation/types';

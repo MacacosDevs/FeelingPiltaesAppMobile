@@ -33,7 +33,7 @@ import { ApiError } from '../api/client';
 import type { ClaseResponse } from '../api/types';
 import { useMisReservas } from '../hooks/useMisReservas';
 import { paqueteActivoDe, useMisPaquetesActivos } from '../hooks/useMisPaquetesActivos';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
 import { formatDayMonth, formatFullDate, formatHora } from '../utils/date';
 import { openDirections } from '../utils/directions';

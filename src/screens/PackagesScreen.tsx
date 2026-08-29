@@ -6,7 +6,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PackageCard } from '../components/PackageCard';
 import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { useCarrito } from '../context/CarritoContext';
 import { useSportMode } from '../context/SportModeContext';
 import { PadelPackagesScreen } from './PadelPackagesScreen';

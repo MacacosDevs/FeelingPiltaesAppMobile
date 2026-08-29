@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BellIcon, ShoppingBagIcon } from 'react-native-heroicons/outline';
 import { SparkleIcon } from '@/components/LumaArt';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { useCarrito } from '@/context/CarritoContext';
 import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
 import type { RootStackParamList } from '../types';

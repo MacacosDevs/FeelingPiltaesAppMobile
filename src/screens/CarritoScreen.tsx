@@ -6,7 +6,7 @@ import { ChevronLeftIcon, ShoppingCartIcon, XMarkIcon } from 'react-native-heroi
 import { useStripe } from '@stripe/stripe-react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { CompraExitosaSheet } from '../components/CompraExitosaSheet';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { useCarrito } from '../context/CarritoContext';
 import { crearIntentoPago } from '../api/pagos';
 import { ApiError } from '../api/client';

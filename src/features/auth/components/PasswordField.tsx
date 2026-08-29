@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Input, FieldError } from 'heroui-native';
 import { EyeIcon, EyeSlashIcon } from 'react-native-heroicons/outline';
-import { colors } from '../theme';
+import { colors } from '@/theme';
 
 type PasswordFieldProps = {
   value: string;

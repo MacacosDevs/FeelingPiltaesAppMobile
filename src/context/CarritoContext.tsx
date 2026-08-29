@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { PaqueteResponse } from '../api/types';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@/features/auth';
 
 type CarritoContextValue = {
   items: PaqueteResponse[];

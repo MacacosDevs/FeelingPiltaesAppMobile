@@ -1,5 +1,5 @@
-import { apiFetch } from './client';
-import type { ActualizarPerfilRequest, UsuarioResponse } from './types';
+import { apiFetch } from '@/api/client';
+import type { ActualizarPerfilRequest, UsuarioResponse } from '@/api/types';
 
 export type ImageAsset = {
   uri: string;

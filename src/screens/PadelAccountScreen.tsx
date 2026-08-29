@@ -7,7 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PencilSquareIcon, Squares2X2Icon } from 'react-native-heroicons/outline';
 import { Avatar } from '../components/Avatar';
 import { OutlineButton } from '../components/OutlineButton';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { useCourtReservations } from '../context/CourtReservationsContext';
 import { resolveMediaUrl } from '../utils/media';
 import { canchaById, horarioById } from '../data/canchas';

@@ -1,5 +1,5 @@
-import { apiFetch } from './client';
-import type { TokenResponse } from './types';
+import { apiFetch } from '@/api/client';
+import type { TokenResponse } from '@/api/types';
 
 export function login(correo: string, contrasena: string): Promise<TokenResponse> {
   return apiFetch<TokenResponse>('/api/auth/login', {

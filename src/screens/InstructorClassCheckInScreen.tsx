@@ -7,7 +7,7 @@ import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 're
 import { ChevronLeftIcon, QrCodeIcon } from 'react-native-heroicons/outline';
 import { CheckCircleIcon, XCircleIcon } from 'react-native-heroicons/solid';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { obtenerClase, registrarCheckin } from '../api/clases';
 import { ApiError } from '../api/client';
 import type { ClaseResponse } from '../api/types';

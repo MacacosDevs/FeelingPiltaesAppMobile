@@ -16,7 +16,7 @@ import { CheckCircleIcon } from 'react-native-heroicons/solid';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { CapacityIndicator } from '../components/CapacityIndicator';
 import { Avatar } from '../components/Avatar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { listarAsistentes, obtenerClase } from '../api/clases';
 import type { ClaseReservaResponse, ClaseResponse } from '../api/types';
 import { ACTIVITY_META } from '../utils/activityMeta';

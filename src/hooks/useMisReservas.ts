@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { listarMisReservas } from '../api/clases';
 import type { ClaseReservaResponse } from '../api/types';
 

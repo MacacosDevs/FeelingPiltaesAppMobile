@@ -17,7 +17,7 @@ import { TextField } from '../components/TextField';
 import { SocialHandleField } from '../components/SocialHandleField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Avatar } from '../components/Avatar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { actualizarMiPerfilInstructor, obtenerPerfilInstructor } from '../api/instructores';
 import { ApiError } from '../api/client';
 import { resolveMediaUrl } from '../utils/media';

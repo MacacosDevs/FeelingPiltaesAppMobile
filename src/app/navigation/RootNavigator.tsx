@@ -1,12 +1,11 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { AuthProvider, AuthScreen, useAuth } from '@/features/auth';
 import { CarritoProvider } from '@/context/CarritoContext';
 import { SportModeProvider } from '@/context/SportModeContext';
 import { CourtReservationsProvider } from '@/context/CourtReservationsContext';
 import { SplashScreen } from './components/SplashScreen';
-import { AuthScreen } from '@/screens/AuthScreen';
 import { MainTabs } from './MainTabs';
 import { InstructorTabs } from './InstructorTabs';
 import { EditProfileScreen } from '@/screens/EditProfileScreen';

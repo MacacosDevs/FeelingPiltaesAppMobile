@@ -9,8 +9,8 @@ import React, {
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as authApi from '../api/auth';
 import { actualizarPerfil, obtenerPerfil, subirFoto, type ImageAsset } from '../api/usuarios';
-import type { UsuarioResponse } from '../api/types';
-import { GOOGLE_WEB_CLIENT_ID } from '../config/googleAuth';
+import type { UsuarioResponse } from '@/api/types';
+import { GOOGLE_WEB_CLIENT_ID } from '@/config/googleAuth';
 import { borrarToken, guardarToken, obtenerToken } from '../utils/secureToken';
 
 GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });

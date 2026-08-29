@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { obtenerMisCompras, obtenerMisPaquetesActivos } from '../api/pagos';
 import type { CompraResponse, PaqueteActivoResponse } from '../api/types';
 import type { Categoria } from '../data/clases';

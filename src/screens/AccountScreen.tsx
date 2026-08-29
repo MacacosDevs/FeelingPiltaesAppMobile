@@ -8,7 +8,7 @@ import { PencilSquareIcon } from 'react-native-heroicons/outline';
 import { Avatar } from '../components/Avatar';
 import { GuestPrompt } from '../components/GuestPrompt';
 import { OutlineButton } from '../components/OutlineButton';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/features/auth';
 import { resolveMediaUrl } from '../utils/media';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { useSportMode } from '../context/SportModeContext';
