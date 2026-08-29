@@ -4,17 +4,21 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider, AuthScreen, useAuth } from '@/features/auth';
 import { ClassDetailScreen } from '@/features/classes';
 import { SportModeProvider } from '@/context/SportModeContext';
-import { CourtReservationsProvider } from '@/context/CourtReservationsContext';
 import { SplashScreen } from './components/SplashScreen';
 import { MainTabs } from './MainTabs';
 import { InstructorTabs } from './InstructorTabs';
-import { EditProfileScreen } from '@/screens/EditProfileScreen';
-import { InstructorEditProfileScreen } from '@/screens/InstructorEditProfileScreen';
-import { InstructorProfileScreen } from '@/screens/InstructorProfileScreen';
-import { InstructorClassDetailScreen } from '@/screens/InstructorClassDetailScreen';
-import { InstructorClassCheckInScreen } from '@/screens/InstructorClassCheckInScreen';
-import { CourtBookingScreen } from '@/screens/CourtBookingScreen';
-import { CourtBookingConfirmationScreen } from '@/screens/CourtBookingConfirmationScreen';
+import { EditProfileScreen } from '@/features/account';
+import {
+  InstructorEditProfileScreen,
+  InstructorProfileScreen,
+  InstructorClassDetailScreen,
+  InstructorClassCheckInScreen,
+} from '@/features/instructor';
+import {
+  CourtBookingScreen,
+  CourtBookingConfirmationScreen,
+  CourtReservationsProvider,
+} from '@/features/padel';
 import { CarritoProvider, CarritoScreen } from '@/features/packages';
 import type { RootStackParamList } from './types';
 

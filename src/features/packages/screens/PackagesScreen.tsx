@@ -9,7 +9,7 @@ import { AuthRequiredSheet } from '@/components/AuthRequiredSheet';
 import { useAuth } from '@/features/auth';
 import { useCarrito } from '../context/CarritoContext';
 import { useSportMode } from '@/context/SportModeContext';
-import { PadelPackagesScreen } from '@/screens/PadelPackagesScreen';
+import { PadelPackagesScreen } from '@/features/padel';
 import { listarPaquetes } from '../api/paquetes';
 import type { PaqueteResponse } from '@/api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';

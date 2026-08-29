@@ -22,7 +22,7 @@ import { listarClasesPublico } from '../api/clases';
 import type { ClaseResponse } from '@/api/types';
 import { ACTIVITY_META } from '@/utils/activityMeta';
 import { useSportMode } from '@/context/SportModeContext';
-import { CourtsScreen } from '@/screens/CourtsScreen';
+import { CourtsScreen } from '@/features/padel';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
 import {
   WEEKDAY_LABELS,
