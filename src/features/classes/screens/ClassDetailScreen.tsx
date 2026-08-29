@@ -17,7 +17,6 @@ import {
   ArrowLeftIcon,
   HeartIcon,
   MapPinIcon,
-  SparklesIcon,
   StarIcon,
 } from 'react-native-heroicons/outline';
 import { HeartIcon as HeartIconSolid } from 'react-native-heroicons/solid';

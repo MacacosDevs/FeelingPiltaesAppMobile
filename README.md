@@ -4,6 +4,41 @@ Aplicacion mobile de FeelingPilates
 
 This is a [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+## Estructura del proyecto
+
+El código de `src/` está organizado por feature de negocio, no por tipo de archivo:
+
+```
+src/
+  app/            # composición de la app: navegación (RootNavigator, MainTabs,
+                   # InstructorTabs) y su chrome (TopBar, BottomNavBar, Splash...)
+  features/       # una carpeta por dominio de negocio
+    auth/         # login, registro y sesión (AuthContext)
+    classes/      # horario y detalle de clase (pilates)
+    packages/     # paquetes, carrito y pagos
+    account/      # cuenta del alumno
+    instructor/   # todo el flujo de instructoras
+    padel/        # modo Padel (canchas y reservas)
+    home/
+    events/
+  components/     # UI-kit genérico sin lógica de negocio (botones, campos,
+                   # modales, tarjetas) usado por 2+ features
+  api/            # cliente http + tipos de API compartidos
+  context/        # SportModeContext (toggle Pilates/Padel, transversal)
+  data/           # datos de referencia compartidos (INSTRUCTOR_META, etc.)
+  utils/          # utilidades genéricas (fechas, formato, media...)
+  theme/          # colores, tipografía, spacing
+  config/         # env, Google Auth, Google Maps
+```
+
+Cada carpeta bajo `features/` expone un único `index.ts` con lo que el resto
+de la app puede usar. Regla simple: si necesitas algo de otra feature,
+impórtalo de su `index.ts` (nunca de una ruta interna); todo lo demás sale
+de las carpetas compartidas de arriba. Los imports usan el alias `@/*`
+apuntando a `src/*` (configurado en `babel.config.js` y `tsconfig.json`), así
+que cualquier import se ve igual de corto sin importar la profundidad, por
+ejemplo `import { useAuth } from '@/features/auth'`.
+
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
