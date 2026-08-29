@@ -8,7 +8,7 @@ import { ChevronLeftIcon, QrCodeIcon } from 'react-native-heroicons/outline';
 import { CheckCircleIcon, XCircleIcon } from 'react-native-heroicons/solid';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAuth } from '@/features/auth';
-import { obtenerClase, registrarCheckin } from '../api/clases';
+import { obtenerClase, registrarCheckin } from '@/features/classes';
 import { ApiError } from '../api/client';
 import type { ClaseResponse } from '../api/types';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';

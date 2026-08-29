@@ -1,9 +1,9 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CheckIcon } from 'react-native-heroicons/outline';
-import { PrimaryButton } from './PrimaryButton';
-import { colors, fontFamily, fontSize, fontWeight, radius } from '../theme';
-import type { PaqueteResponse } from '../api/types';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { colors, fontFamily, fontSize, fontWeight, radius } from '@/theme';
+import type { PaqueteResponse } from '@/api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';
 
 type CompraExitosaSheetProps = {

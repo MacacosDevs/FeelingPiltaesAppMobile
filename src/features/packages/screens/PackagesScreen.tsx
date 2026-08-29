@@ -4,16 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { PackageCard } from '../components/PackageCard';
-import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
+import { PackageCard } from '@/components/PackageCard';
+import { AuthRequiredSheet } from '@/components/AuthRequiredSheet';
 import { useAuth } from '@/features/auth';
 import { useCarrito } from '../context/CarritoContext';
-import { useSportMode } from '../context/SportModeContext';
-import { PadelPackagesScreen } from './PadelPackagesScreen';
+import { useSportMode } from '@/context/SportModeContext';
+import { PadelPackagesScreen } from '@/screens/PadelPackagesScreen';
 import { listarPaquetes } from '../api/paquetes';
-import type { PaqueteResponse } from '../api/types';
+import type { PaqueteResponse } from '@/api/types';
 import { formatPrecio, formatVigencia } from '../utils/money';
-import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '../theme';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight } from '@/theme';
 import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 type PackagesNavigationProp = CompositeNavigationProp<

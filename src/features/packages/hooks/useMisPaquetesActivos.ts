@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth';
 import { obtenerMisCompras, obtenerMisPaquetesActivos } from '../api/pagos';
-import type { CompraResponse, PaqueteActivoResponse } from '../api/types';
-import type { Categoria } from '../data/clases';
+import type { CompraResponse, PaqueteActivoResponse } from '@/api/types';
+import type { Categoria } from '@/data/clases';
 
 // El backend usa 'bacu_fit' (coincide con el enum de Paquete); las pantallas
 // usan 'bacufit' (Categoria en data/clases.ts). Este helper evita repetir el

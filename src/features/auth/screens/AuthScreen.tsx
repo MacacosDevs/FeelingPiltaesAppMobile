@@ -26,7 +26,7 @@ import { validarContrasena, validarCorreo } from '../utils/validation';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
 import type { RootStackParamList } from '@/app/navigation/types';
 
-const imgWelcome = require('../assets/images/welcome-art.jpg');
+const imgWelcome = require('@/assets/images/welcome-art.jpg');
 
 const LONGITUD_MINIMA_CONTRASENA_REGISTRO = 8;
 

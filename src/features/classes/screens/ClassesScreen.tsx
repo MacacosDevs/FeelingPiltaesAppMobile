@@ -13,17 +13,17 @@ import { useNavigation, type CompositeNavigationProp } from '@react-navigation/n
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronRightIcon, FunnelIcon } from 'react-native-heroicons/outline';
-import { ClassFilterModal, type FilterOption } from '../components/ClassFilterModal';
-import { CalendarModal } from '../components/CalendarModal';
+import { ClassFilterModal, type FilterOption } from '@/components/ClassFilterModal';
+import { CalendarModal } from '@/components/CalendarModal';
 import { CategoryToggle } from '../components/CategoryToggle';
-import { CapacityIndicator } from '../components/CapacityIndicator';
-import { isClasePast, type Categoria } from '../data/clases';
+import { CapacityIndicator } from '@/components/CapacityIndicator';
+import { isClasePast, type Categoria } from '@/data/clases';
 import { listarClasesPublico } from '../api/clases';
-import type { ClaseResponse } from '../api/types';
-import { ACTIVITY_META } from '../utils/activityMeta';
-import { useSportMode } from '../context/SportModeContext';
-import { CourtsScreen } from './CourtsScreen';
-import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
+import type { ClaseResponse } from '@/api/types';
+import { ACTIVITY_META } from '@/utils/activityMeta';
+import { useSportMode } from '@/context/SportModeContext';
+import { CourtsScreen } from '@/screens/CourtsScreen';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
 import {
   WEEKDAY_LABELS,
   addDays,
@@ -34,7 +34,7 @@ import {
   isSameDay,
   mondayOf,
   startOfDay,
-} from '../utils/date';
+} from '@/utils/date';
 import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
 const DAYS_IN_STRIP = 7;

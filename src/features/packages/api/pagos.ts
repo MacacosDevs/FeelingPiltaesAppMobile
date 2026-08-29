@@ -1,5 +1,5 @@
-import { apiFetch } from './client';
-import type { CompraResponse, CrearPagoResponse, PaqueteActivoResponse } from './types';
+import { apiFetch } from '@/api/client';
+import type { CompraResponse, CrearPagoResponse, PaqueteActivoResponse } from '@/api/types';
 
 export function crearIntentoPago(
   token: string,

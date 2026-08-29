@@ -3,8 +3,8 @@ import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '@/screens/HomeScreen';
-import { ClassesScreen } from '@/screens/ClassesScreen';
-import { PackagesScreen } from '@/screens/PackagesScreen';
+import { ClassesScreen } from '@/features/classes';
+import { PackagesScreen } from '@/features/packages';
 import { EventsScreen } from '@/screens/EventsScreen';
 import { AccountScreen } from '@/screens/AccountScreen';
 import { BottomNavBar } from './components/BottomNavBar';

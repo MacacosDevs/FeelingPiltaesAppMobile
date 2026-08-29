@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth';
 import { listarMisReservas } from '../api/clases';
-import type { ClaseReservaResponse } from '../api/types';
+import type { ClaseReservaResponse } from '@/api/types';
 
 // Igual que useMisPaquetesActivos, pero además expone `recargar`: a
 // diferencia de los paquetes, aquí sí hace falta refrescar tras una acción

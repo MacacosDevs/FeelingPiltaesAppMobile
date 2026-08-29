@@ -1,5 +1,5 @@
-import { apiFetch } from './client';
-import type { ClaseReservaResponse, ClaseResponse } from './types';
+import { apiFetch } from '@/api/client';
+import type { ClaseReservaResponse, ClaseResponse } from '@/api/types';
 
 export function listarClasesPublico(
   desde: string,

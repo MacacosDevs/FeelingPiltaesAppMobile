@@ -14,7 +14,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useAuth } from '@/features/auth';
-import { listarMisClasesInstructor } from '../api/clases';
+import { listarMisClasesInstructor } from '@/features/classes';
 import type { ClaseResponse } from '../api/types';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { CapacityIndicator } from '../components/CapacityIndicator';

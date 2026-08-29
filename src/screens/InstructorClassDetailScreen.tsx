@@ -17,7 +17,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { CapacityIndicator } from '../components/CapacityIndicator';
 import { Avatar } from '../components/Avatar';
 import { useAuth } from '@/features/auth';
-import { listarAsistentes, obtenerClase } from '../api/clases';
+import { listarAsistentes, obtenerClase } from '@/features/classes';
 import type { ClaseReservaResponse, ClaseResponse } from '../api/types';
 import { ACTIVITY_META } from '../utils/activityMeta';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '../theme';

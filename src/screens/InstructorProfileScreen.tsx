@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeftIcon, StarIcon } from 'react-native-heroicons/outline';
 import { obtenerPerfilInstructor } from '../api/instructores';
-import { listarClasesPublico } from '../api/clases';
+import { listarClasesPublico } from '@/features/classes';
 import type { ClaseResponse, PerfilInstructorResponse } from '../api/types';
 import { INSTRUCTOR_META, stripCon } from '../data/clases';
 import { ACTIVITY_META } from '../utils/activityMeta';

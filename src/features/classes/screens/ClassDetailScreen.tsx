@@ -22,27 +22,27 @@ import {
 } from 'react-native-heroicons/outline';
 import { HeartIcon as HeartIconSolid } from 'react-native-heroicons/solid';
 import QRCode from 'react-native-qrcode-svg';
-import { PrimaryButton } from '../components/PrimaryButton';
-import { OutlineButton } from '../components/OutlineButton';
-import { AuthRequiredSheet } from '../components/AuthRequiredSheet';
-import { CapacityIndicator } from '../components/CapacityIndicator';
-import { MapPreview } from '../components/MapPreview';
-import { INSTRUCTOR_META, SALON_ADDRESSES, isClasePast, salonGeocodeQuery, type Categoria } from '../data/clases';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { OutlineButton } from '@/components/OutlineButton';
+import { AuthRequiredSheet } from '@/components/AuthRequiredSheet';
+import { CapacityIndicator } from '@/components/CapacityIndicator';
+import { MapPreview } from '@/components/MapPreview';
+import { INSTRUCTOR_META, SALON_ADDRESSES, isClasePast, salonGeocodeQuery, type Categoria } from '@/data/clases';
 import { obtenerClase, reservarClase } from '../api/clases';
-import { ApiError } from '../api/client';
-import type { ClaseResponse } from '../api/types';
+import { ApiError } from '@/api/client';
+import type { ClaseResponse } from '@/api/types';
 import { useMisReservas } from '../hooks/useMisReservas';
-import { paqueteActivoDe, useMisPaquetesActivos } from '../hooks/useMisPaquetesActivos';
+import { paqueteActivoDe, useMisPaquetesActivos } from '@/features/packages';
 import { useAuth } from '@/features/auth';
-import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
-import { formatDayMonth, formatFullDate, formatHora } from '../utils/date';
-import { openDirections } from '../utils/directions';
+import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
+import { formatDayMonth, formatFullDate, formatHora } from '@/utils/date';
+import { openDirections } from '@/utils/directions';
 import type { RootStackParamList } from '@/app/navigation/types';
 
-const avatarPlaceholder = require('../assets/images/avatar-placeholder.jpg');
-const imgYoga = require('../assets/images/yoga-wellness.jpg');
-const imgSpa = require('../assets/images/spa-massage.jpg');
-const imgReformer = require('../assets/images/pilates-reformer.jpg');
+const avatarPlaceholder = require('@/assets/images/avatar-placeholder.jpg');
+const imgYoga = require('@/assets/images/yoga-wellness.jpg');
+const imgSpa = require('@/assets/images/spa-massage.jpg');
+const imgReformer = require('@/assets/images/pilates-reformer.jpg');
 
 const NOMBRE_ACTIVIDAD_BACU_FIT = 'Bacu Fit';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Categoria } from '../data/clases';
-import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '../theme';
+import type { Categoria } from '@/data/clases';
+import { colors, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
 
 type CategoryToggleProps = {
   value: Categoria;
