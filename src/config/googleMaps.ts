@@ -1,5 +1,5 @@
 // API key de "Maps SDK for Android" del proyecto "feealingpilates" en Google
-// Cloud Console, restringida al paquete `com.feellingpilatesapp` + SHA-1 del
+// Cloud Console, restringida al paquete `com.feelingpilates.app` + SHA-1 del
 // keystore de firma. También debe estar puesta en
 // android/app/src/main/AndroidManifest.xml como meta-data
 // `com.google.android.geo.API_KEY` (el SDK nativo la lee de ahí, no de este

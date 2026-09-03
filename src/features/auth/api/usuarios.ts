@@ -24,6 +24,13 @@ export function actualizarPerfil(
   });
 }
 
+export function eliminarCuenta(token: string): Promise<void> {
+  return apiFetch<void>('/api/usuarios/me', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export function subirFoto(token: string, asset: ImageAsset): Promise<UsuarioResponse> {
   const formData = new FormData();
   // React Native's FormData acepta este shape especial {uri, type, name} para archivos.

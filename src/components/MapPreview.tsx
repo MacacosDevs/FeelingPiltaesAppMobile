@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { colors, fontFamily, fontSize, radius, shadows } from '../theme';
 
@@ -16,10 +16,10 @@ type Status = 'loading' | 'ready' | 'error';
 // Geocodifica con Nominatim (OpenStreetMap) — servicio público gratuito sin
 // API key. Respeta su política de uso: máximo ~1 solicitud por segundo (aquí
 // se hace una sola vez por pantalla) e identifica la app en el User-Agent.
-// El mapa en sí usa Google Maps (Maps SDK for Android, ver
-// src/config/googleMaps.ts) — mapa real e interactivo, no una imagen. Si
-// falla la geocodificación, se cae a un enlace directo a Google Maps en vez
-// de romper la pantalla.
+// El mapa en sí usa Google Maps en Android (Maps SDK for Android, ver
+// src/config/googleMaps.ts) y Apple Maps en iOS (no requiere API key) —
+// mapa real e interactivo, no una imagen. Si falla la geocodificación, se
+// cae a un enlace directo a Google Maps en vez de romper la pantalla.
 export function MapPreview({ query, height = 220 }: MapPreviewProps) {
   const [status, setStatus] = useState<Status>('loading');
   const [coords, setCoords] = useState<Coordinates | null>(null);
@@ -81,7 +81,7 @@ export function MapPreview({ query, height = 220 }: MapPreviewProps) {
   return (
     <View style={[styles.mapWrap, { height }]}>
       <MapView
-        provider={PROVIDER_GOOGLE}
+        provider={Platform.OS === 'ios' ? PROVIDER_DEFAULT : PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{
           latitude: coords.lat,

@@ -8,7 +8,13 @@ import React, {
 } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as authApi from '../api/auth';
-import { actualizarPerfil, obtenerPerfil, subirFoto, type ImageAsset } from '../api/usuarios';
+import {
+  actualizarPerfil,
+  eliminarCuenta,
+  obtenerPerfil,
+  subirFoto,
+  type ImageAsset,
+} from '../api/usuarios';
 import type { UsuarioResponse } from '@/api/types';
 import { GOOGLE_WEB_CLIENT_ID } from '@/config/googleAuth';
 import { borrarToken, guardarToken, obtenerToken } from '../utils/secureToken';
@@ -26,6 +32,7 @@ type AuthContextValue = {
   registrar: (correo: string, contrasena: string, nombre: string) => Promise<void>;
   loginConGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   updateProfile: (nombre: string, telefono: string, descripcion: string) => Promise<void>;
   updatePhoto: (asset: ImageAsset) => Promise<void>;
 };
@@ -94,6 +101,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    if (!token) {
+      throw new Error('No hay sesión activa');
+    }
+    await eliminarCuenta(token);
+    await borrarToken();
+    setToken(null);
+    setUser(null);
+  }, [token]);
+
   const updateProfile = useCallback(
     async (nombre: string, telefono: string, descripcion: string) => {
       if (!token) {
@@ -131,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       registrar,
       loginConGoogle,
       logout,
+      deleteAccount,
       updateProfile,
       updatePhoto,
     }),
@@ -143,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       registrar,
       loginConGoogle,
       logout,
+      deleteAccount,
       updateProfile,
       updatePhoto,
     ],

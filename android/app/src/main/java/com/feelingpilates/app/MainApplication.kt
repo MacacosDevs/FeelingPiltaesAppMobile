@@ -1,4 +1,4 @@
-package com.feellingpilatesapp
+package com.feelingpilates.app
 
 import android.app.Application
 import com.facebook.react.PackageList

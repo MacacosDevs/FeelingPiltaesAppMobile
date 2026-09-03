@@ -1,4 +1,4 @@
-package com.feellingpilatesapp
+package com.feelingpilates.app
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

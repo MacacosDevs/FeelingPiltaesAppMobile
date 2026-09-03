@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -9,6 +9,7 @@ import { Avatar } from '@/components/Avatar';
 import { GuestPrompt } from '../components/GuestPrompt';
 import { OutlineButton } from '@/components/OutlineButton';
 import { useAuth } from '@/features/auth';
+import { ApiError } from '@/api/client';
 import { resolveMediaUrl } from '@/utils/media';
 import { ACTIVITY_META } from '@/utils/activityMeta';
 import { useSportMode } from '@/context/SportModeContext';
@@ -33,7 +34,7 @@ const ESTADO_COMPRA_META: Record<CompraResponse['estado'], { label: string; colo
 };
 
 export function AccountScreen() {
-  const { user, logout, photoVersion } = useAuth();
+  const { user, logout, deleteAccount, photoVersion } = useAuth();
   const navigation = useNavigation<AccountNavigationProp>();
   const { sport } = useSportMode();
   const { reservas: historial, recargar: recargarReservas } = useMisReservas();
@@ -41,6 +42,7 @@ export function AccountScreen() {
   const { paquetes: paquetesActivos, recargar: recargarPaquetes } = useMisPaquetesActivos();
   const { compras, recargar: recargarCompras } = useMisCompras();
   const [refrescando, setRefrescando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
 
   function handleRefresh() {
     setRefrescando(true);
@@ -50,6 +52,31 @@ export function AccountScreen() {
     // Los hooks no exponen su propio estado de carga; se da tiempo a que la
     // petición vuelva antes de ocultar el indicador de refresco.
     setTimeout(() => setRefrescando(false), 600);
+  }
+
+  function handleEliminarCuenta() {
+    Alert.alert(
+      'Eliminar cuenta',
+      'Esta acción no se puede deshacer. Se perderá el acceso a tus reservas, paquetes e historial.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            setEliminando(true);
+            try {
+              await deleteAccount();
+            } catch (err) {
+              const message = err instanceof ApiError ? err.message : 'Ocurrió un error inesperado';
+              Alert.alert('No se pudo eliminar la cuenta', message);
+            } finally {
+              setEliminando(false);
+            }
+          },
+        },
+      ],
+    );
   }
 
   if (!user) {
@@ -195,6 +222,15 @@ export function AccountScreen() {
         <View style={styles.logoutSection}>
           <OutlineButton label="Cerrar sesión" onPress={logout} />
         </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.deleteAccountButton, pressed && styles.deleteAccountButtonPressed]}
+          disabled={eliminando}
+          onPress={handleEliminarCuenta}>
+          <Text style={styles.deleteAccountLabel}>
+            {eliminando ? 'Eliminando cuenta…' : 'Eliminar cuenta'}
+          </Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -372,5 +408,19 @@ const styles = StyleSheet.create({
   },
   logoutSection: {
     marginTop: 8,
+  },
+  deleteAccountButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  deleteAccountButtonPressed: {
+    opacity: 0.6,
+  },
+  deleteAccountLabel: {
+    fontFamily: fontFamily.body,
+    fontWeight: fontWeight.medium,
+    fontSize: fontSize.base,
+    color: colors.error,
   },
 });
