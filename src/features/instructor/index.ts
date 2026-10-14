@@ -5,3 +5,4 @@ export { InstructorEditProfileScreen } from './screens/InstructorEditProfileScre
 export { InstructorProfileScreen } from './screens/InstructorProfileScreen';
 export { InstructorClassDetailScreen } from './screens/InstructorClassDetailScreen';
 export { InstructorClassCheckInScreen } from './screens/InstructorClassCheckInScreen';
+export { obtenerPerfilInstructor } from './api/instructores';

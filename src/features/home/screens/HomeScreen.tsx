@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -9,8 +10,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   CalendarDaysIcon,
   ChevronRightIcon,
@@ -23,10 +25,17 @@ import {
 } from '@/components/LumaArt';
 import { useSportMode } from '@/context/SportModeContext';
 import { PadelHomeScreen } from '@/features/padel';
+import { listarClasesPublico } from '@/features/classes';
+import type { ClaseResponse } from '@/api/types';
+import { isClasePast } from '@/data/clases';
+import { formatHora, formatIsoDate, startOfDay } from '@/utils/date';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
-import type { MainTabParamList } from '@/app/navigation/types';
+import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
-type HomeNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>;
+type HomeNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Home'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 const iconLeafPng = require('@/assets/images/icon-leaf.png');
 const iconLotusPng = require('@/assets/images/icon-lotus.png');
@@ -68,16 +77,45 @@ const destacados = [
   },
 ];
 
-const proximasClases = [
-  { id: '1', hora: '9:00 am', nombre: 'Pilates Reformer', instructora: 'Con Vane Torres', sala: 'Sala Reformer' },
-  { id: '2', hora: '10:15 am', nombre: 'Bacu Fit & Sculpt', instructora: 'Con Ale', sala: 'Sala Principal' },
-  { id: '3', hora: '5:30 pm', nombre: 'Mat & Alignment', instructora: 'Con Sofía', sala: 'Sala Mat' },
-] as const;
+const MAX_PROXIMAS_CLASES = 3;
+
+// Clases reales de hoy que todavía no empiezan, ordenadas por hora.
+function useProximasClasesDeHoy(): { clases: ClaseResponse[]; cargando: boolean } {
+  const [clases, setClases] = useState<ClaseResponse[]>([]);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    let cancelado = false;
+    const hoy = formatIsoDate(startOfDay(new Date()));
+    listarClasesPublico(hoy, hoy)
+      .then(data => {
+        if (cancelado) return;
+        setClases(
+          data
+            .filter(clase => clase.estado === 'PROGRAMADA' && !isClasePast(clase))
+            .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+            .slice(0, MAX_PROXIMAS_CLASES),
+        );
+      })
+      .catch(() => {
+        if (!cancelado) setClases([]);
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  return { clases, cargando };
+}
 
 export function HomeScreen() {
   const navigation = useNavigation<HomeNavigationProp>();
   const { sport } = useSportMode();
   const [busqueda, setBusqueda] = useState('');
+  const { clases: proximasClases, cargando: cargandoClases } = useProximasClasesDeHoy();
 
   if (sport === 'padel') {
     return <PadelHomeScreen />;
@@ -183,20 +221,24 @@ export function HomeScreen() {
           </View>
 
           <View style={styles.classList}>
+            {cargandoClases && <ActivityIndicator color={colors.accent} />}
+            {!cargandoClases && proximasClases.length === 0 && (
+              <Text style={styles.classInstructora}>Ya no quedan clases por hoy. Revisa el horario completo.</Text>
+            )}
             {proximasClases.map((clase) => (
               <Pressable
                 key={clase.id}
                 style={styles.classCard}
-                onPress={() => navigation.navigate('Clases')}>
+                onPress={() => navigation.navigate('ClassDetail', { claseId: clase.id })}>
                 <View style={styles.timeBadge}>
                   <CalendarDaysIcon size={14} color={colors.accent} />
-                  <Text style={styles.classHora}>{clase.hora}</Text>
+                  <Text style={styles.classHora}>{formatHora(clase.horaInicio)}</Text>
                 </View>
 
                 <View style={styles.classInfo}>
-                  <Text style={styles.className}>{clase.nombre}</Text>
+                  <Text style={styles.className}>{clase.tipoActividadNombre}</Text>
                   <Text style={styles.classInstructora}>
-                    {clase.instructora} · <Text style={styles.classSala}>{clase.sala}</Text>
+                    Con {clase.instructorNombre} · <Text style={styles.classSala}>{clase.salonNombre}</Text>
                   </Text>
                 </View>
 

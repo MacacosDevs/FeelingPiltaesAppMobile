@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PencilSquareIcon } from 'react-native-heroicons/outline';
@@ -16,8 +16,9 @@ import { useSportMode } from '@/context/SportModeContext';
 import { useMisReservas } from '@/features/classes';
 import { PadelAccountScreen } from '@/features/padel';
 import { paqueteActivoDe, useMisCompras, useMisPaquetesActivos, formatPrecio } from '@/features/packages';
-import { formatDayMonth, formatShortDate } from '@/utils/date';
-import type { CompraResponse } from '@/api/types';
+import { formatDayMonth, formatHora, formatShortDate } from '@/utils/date';
+import { isClasePast } from '@/data/clases';
+import type { ClaseReservaResponse, CompraResponse } from '@/api/types';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
 import type { MainTabParamList, RootStackParamList } from '@/app/navigation/types';
 
@@ -33,16 +34,56 @@ const ESTADO_COMPRA_META: Record<CompraResponse['estado'], { label: string; colo
   cancelada: { label: 'Cancelado', color: colors.error },
 };
 
+function ordenClase(reserva: ClaseReservaResponse): string {
+  return `${reserva.clase.fecha}T${reserva.clase.horaInicio}`;
+}
+
+// Estado mostrado junto a cada reserva. El backend ya excluye las reservas que
+// canceló el propio usuario; una clase cancelada por el estudio sí aparece.
+function estadoReserva(reserva: ClaseReservaResponse, pasada: boolean): { label: string; color: string } | null {
+  if (reserva.clase.estado === 'CANCELADA') {
+    return { label: 'Clase cancelada', color: colors.error };
+  }
+  if (!pasada) {
+    return null;
+  }
+  return reserva.estado === 'ASISTIO'
+    ? { label: 'Asististe', color: colors.spotsAvailable }
+    : { label: 'No asististe', color: colors.textMuted };
+}
+
 export function AccountScreen() {
   const { user, logout, deleteAccount, photoVersion } = useAuth();
   const navigation = useNavigation<AccountNavigationProp>();
   const { sport } = useSportMode();
-  const { reservas: historial, recargar: recargarReservas } = useMisReservas();
+  const { reservas, recargar: recargarReservas } = useMisReservas();
   const avatarUri = resolveMediaUrl(user?.fotoUrl, photoVersion);
   const { paquetes: paquetesActivos, recargar: recargarPaquetes } = useMisPaquetesActivos();
   const { compras, recargar: recargarCompras } = useMisCompras();
   const [refrescando, setRefrescando] = useState(false);
   const [eliminando, setEliminando] = useState(false);
+
+  // Próximas: de la más cercana a la más lejana. Historial: de la más reciente
+  // a la más antigua.
+  const { proximas, historial } = useMemo(() => {
+    const ahora = new Date();
+    const futuras: ClaseReservaResponse[] = [];
+    const pasadas: ClaseReservaResponse[] = [];
+    for (const reserva of reservas) {
+      (isClasePast(reserva.clase, ahora) ? pasadas : futuras).push(reserva);
+    }
+    futuras.sort((a, b) => ordenClase(a).localeCompare(ordenClase(b)));
+    pasadas.sort((a, b) => ordenClase(b).localeCompare(ordenClase(a)));
+    return { proximas: futuras, historial: pasadas };
+  }, [reservas]);
+
+  // Al volver de reservar o cancelar en el detalle de clase, la lista se
+  // actualiza sin tener que deslizar para refrescar.
+  useFocusEffect(
+    useCallback(() => {
+      recargarReservas();
+    }, [recargarReservas]),
+  );
 
   function handleRefresh() {
     setRefrescando(true);
@@ -148,42 +189,54 @@ export function AccountScreen() {
           );
         })}
 
-        <View>
-          <Text style={styles.sectionLabel}>Historial</Text>
-          {historial.length === 0 ? (
-            <View style={styles.historyEmpty}>
-              <Text style={styles.historyEmptyText}>Aún no has reservado ninguna clase.</Text>
-            </View>
-          ) : (
-            <View style={styles.historyCard}>
-              {historial.map((reserva, index) => {
-                const meta = ACTIVITY_META[reserva.clase.tipoActividadNombre];
-                const Icon = meta?.Icon;
-                return (
-                  <Pressable
-                    key={reserva.id}
-                    style={[
-                      styles.historyRow,
-                      index === historial.length - 1 && styles.historyRowLast,
-                    ]}
-                    onPress={() => navigation.navigate('ClassDetail', { claseId: reserva.clase.id })}>
-                    <View style={styles.historyClaseRow}>
-                      {Icon && (
-                        <View style={[styles.historyIconWrap, { backgroundColor: `${meta.color}1f` }]}>
-                          <Icon color={meta.color} size={16} />
+        {[
+          { titulo: 'Próximas clases', lista: proximas, pasada: false, vacio: 'No tienes clases reservadas próximamente.' },
+          { titulo: 'Historial', lista: historial, pasada: true, vacio: 'Aún no has tomado ninguna clase.' },
+        ].map(seccion => (
+          <View key={seccion.titulo}>
+            <Text style={styles.sectionLabel}>{seccion.titulo}</Text>
+            {seccion.lista.length === 0 ? (
+              <View style={styles.historyEmpty}>
+                <Text style={styles.historyEmptyText}>{seccion.vacio}</Text>
+              </View>
+            ) : (
+              <View style={styles.historyCard}>
+                {seccion.lista.map((reserva, index) => {
+                  const meta = ACTIVITY_META[reserva.clase.tipoActividadNombre];
+                  const Icon = meta?.Icon;
+                  const estado = estadoReserva(reserva, seccion.pasada);
+                  return (
+                    <Pressable
+                      key={reserva.id}
+                      style={[
+                        styles.historyRow,
+                        index === seccion.lista.length - 1 && styles.historyRowLast,
+                      ]}
+                      onPress={() => navigation.navigate('ClassDetail', { claseId: reserva.clase.id })}>
+                      <View style={styles.historyClaseRow}>
+                        {Icon && (
+                          <View style={[styles.historyIconWrap, { backgroundColor: `${meta.color}1f` }]}>
+                            <Icon color={meta.color} size={16} />
+                          </View>
+                        )}
+                        <View style={styles.paymentInfo}>
+                          <Text style={styles.historyClase}>{reserva.clase.tipoActividadNombre}</Text>
+                          <Text style={styles.paymentFecha}>
+                            {formatShortDate(new Date(`${reserva.clase.fecha}T00:00:00`))} ·{' '}
+                            {formatHora(reserva.clase.horaInicio)}
+                          </Text>
                         </View>
+                      </View>
+                      {estado && (
+                        <Text style={[styles.paymentEstado, { color: estado.color }]}>{estado.label}</Text>
                       )}
-                      <Text style={styles.historyClase}>{reserva.clase.tipoActividadNombre}</Text>
-                    </View>
-                    <Text style={styles.historyFecha}>
-                      {formatShortDate(new Date(`${reserva.clase.fecha}T00:00:00`))}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ))}
 
         <View>
           <Text style={styles.sectionLabel}>Historial de pagos</Text>
@@ -387,11 +440,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.body,
     fontSize: fontSize.base,
     color: colors.textPrimary,
-  },
-  historyFecha: {
-    fontFamily: fontFamily.body,
-    fontSize: fontSize.base,
-    color: colors.textMuted,
   },
   paymentInfo: {
     gap: 2,

@@ -44,19 +44,19 @@ const DAYS_IN_STRIP = 7;
 // "Bacu Fit" cuenta como Pilates para el toggle de categoría.
 const NOMBRE_ACTIVIDAD_BACU_FIT = 'Bacu Fit';
 
-const TIPO_OPTIONS: FilterOption[] = [
-  { value: 'Reformer', label: 'Reformer', description: 'Fuerza y control con máquina' },
-  { value: 'Mat', label: 'Mat', description: 'En colchoneta, bajo impacto' },
-  { value: 'Cadillac', label: 'Cadillac' },
-  { value: 'Silla', label: 'Silla' },
-  { value: 'Barril', label: 'Barril' },
-  { value: 'Circuito', label: 'Circuito' },
-];
+// Las opciones de filtro salen de las clases que devuelve el backend (los
+// nombres tienen que coincidir exacto con tipoActividadNombre/salonNombre);
+// esto solo agrega una descripción a los tipos conocidos.
+const TIPO_DESCRIPCIONES: Record<string, string> = {
+  Reformer: 'Fuerza y control con máquina',
+  Mat: 'En colchoneta, bajo impacto',
+};
 
-const SALON_OPTIONS: FilterOption[] = [
-  { value: 'Feeling Pilates Centro', label: 'Feeling Pilates Centro' },
-  { value: 'Feeling Pilates Corregidora', label: 'Feeling Pilates Corregidora' },
-];
+function opcionesUnicas(valores: string[], descripciones: Record<string, string> = {}): FilterOption[] {
+  return Array.from(new Set(valores))
+    .sort((a, b) => a.localeCompare(b, 'es'))
+    .map(valor => ({ value: valor, label: valor, description: descripciones[valor] }));
+}
 
 const today = startOfDay(new Date());
 
@@ -80,7 +80,22 @@ export function ClassesScreen() {
   const [refrescando, setRefrescando] = useState(false);
 
   const activeFilterCount = selectedTipos.length + selectedSalones.length;
-  const tipoOptions = categoria === 'pilates' ? TIPO_OPTIONS : [];
+  const tipoOptions = useMemo(
+    () =>
+      categoria === 'pilates'
+        ? opcionesUnicas(
+            clasesSemana
+              .map(clase => clase.tipoActividadNombre)
+              .filter(nombre => nombre !== NOMBRE_ACTIVIDAD_BACU_FIT),
+            TIPO_DESCRIPCIONES,
+          )
+        : [],
+    [categoria, clasesSemana],
+  );
+  const salonOptions = useMemo(
+    () => opcionesUnicas(clasesSemana.map(clase => clase.salonNombre)),
+    [clasesSemana],
+  );
 
   const weekDays = useMemo(
     () => Array.from({ length: DAYS_IN_STRIP }, (_, index) => addDays(weekStart, index)),
@@ -293,7 +308,7 @@ export function ClassesScreen() {
       <ClassFilterModal
         visible={filterModalOpen}
         tipoOptions={tipoOptions}
-        salonOptions={SALON_OPTIONS}
+        salonOptions={salonOptions}
         selectedTipos={selectedTipos}
         selectedSalones={selectedSalones}
         onApply={(tipos, salones) => {

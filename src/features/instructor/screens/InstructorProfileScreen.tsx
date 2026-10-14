@@ -14,7 +14,7 @@ import { ChevronLeftIcon, StarIcon } from 'react-native-heroicons/outline';
 import { obtenerPerfilInstructor } from '../api/instructores';
 import { listarClasesPublico } from '@/features/classes';
 import type { ClaseResponse, PerfilInstructorResponse } from '@/api/types';
-import { INSTRUCTOR_META, stripCon } from '@/data/clases';
+import { resolveMediaUrl } from '@/utils/media';
 import { ACTIVITY_META } from '@/utils/activityMeta';
 import { SocialLinksRow } from '../components/SocialLinksRow';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius } from '@/theme';
@@ -34,34 +34,52 @@ const avatarPlaceholder = require('@/assets/images/avatar-placeholder.jpg');
 type Props = NativeStackScreenProps<RootStackParamList, 'InstructorProfile'>;
 
 export function InstructorProfileScreen({ navigation, route }: Props) {
-  const { instructora } = route.params;
-  const meta = INSTRUCTOR_META[instructora];
-  const name = stripCon(instructora);
+  const { instructorId, nombre } = route.params;
 
-  // El horario/especialidades siguen viniendo del mock local (todavía no hay
-  // módulo de clases en el backend); bio, calificación, foto y redes sociales
-  // sí son datos reales de la instructora y se traen del backend. Si falla o
-  // la instructora no tiene usuarioId, se mantiene lo que ya había en el mock.
+  // Todo viene del backend: perfil público (bio, calificación, foto, redes)
+  // y las clases publicadas de la semana, filtradas por esta instructora.
   const [perfil, setPerfil] = useState<PerfilInstructorResponse | null>(null);
+  const [clasesSemana, setClasesSemana] = useState<ClaseResponse[]>([]);
   const [refrescando, setRefrescando] = useState(false);
 
+  const cargar = useCallback(async () => {
+    const weekStart = mondayOf(startOfDay(new Date()));
+    const weekEnd = addDays(weekStart, 6);
+    const [perfilResult, clasesResult] = await Promise.allSettled([
+      obtenerPerfilInstructor(instructorId),
+      listarClasesPublico(formatIsoDate(weekStart), formatIsoDate(weekEnd)),
+    ]);
+    return {
+      perfil: perfilResult.status === 'fulfilled' ? perfilResult.value : null,
+      clases: clasesResult.status === 'fulfilled' ? clasesResult.value : null,
+    };
+  }, [instructorId]);
+
   useEffect(() => {
-    if (!meta?.usuarioId) return;
     let cancelled = false;
-    obtenerPerfilInstructor(meta.usuarioId)
-      .then(data => {
-        if (!cancelled) setPerfil(data);
-      })
-      .catch(() => {
-        // Sin conexión o instructora sin perfil todavía: nos quedamos con el mock.
-      });
+    cargar().then(resultado => {
+      if (cancelled) return;
+      setPerfil(resultado.perfil);
+      setClasesSemana(resultado.clases ?? []);
+    });
     return () => {
       cancelled = true;
     };
-  }, [meta?.usuarioId]);
+  }, [cargar]);
 
-  const bio = perfil?.sobreSuClase ?? meta?.bio;
-  const rating = perfil?.calificacionPromedio ?? meta?.rating;
+  const handleRefresh = useCallback(async () => {
+    setRefrescando(true);
+    const resultado = await cargar();
+    // Si una de las dos llamadas falla, se conserva lo ya cargado de esa parte.
+    if (resultado.perfil) setPerfil(resultado.perfil);
+    if (resultado.clases) setClasesSemana(resultado.clases);
+    setRefrescando(false);
+  }, [cargar]);
+
+  const name = perfil?.nombre ?? nombre;
+  const bio = perfil?.sobreSuClase ?? null;
+  const rating = perfil?.calificacionPromedio ?? null;
+  const fotoUri = resolveMediaUrl(perfil?.fotoUrl);
   const redesSociales = perfil
     ? {
         instagramUrl: perfil.instagramUrl ?? undefined,
@@ -69,51 +87,21 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
         tiktokUrl: perfil.tiktokUrl ?? undefined,
         whatsappUrl: perfil.whatsappUrl ?? undefined,
       }
-    : meta?.redesSociales;
-
-  const [clasesSemana, setClasesSemana] = useState<ClaseResponse[]>([]);
-
-  useEffect(() => {
-    if (!meta?.usuarioId) return;
-    let cancelled = false;
-    const weekStart = mondayOf(startOfDay(new Date()));
-    const weekEnd = addDays(weekStart, 6);
-    listarClasesPublico(formatIsoDate(weekStart), formatIsoDate(weekEnd))
-      .then(data => {
-        if (!cancelled) setClasesSemana(data);
-      })
-      .catch(() => {
-        if (!cancelled) setClasesSemana([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [meta?.usuarioId]);
-
-  const handleRefresh = useCallback(async () => {
-    if (!meta?.usuarioId) return;
-    setRefrescando(true);
-    const weekStart = mondayOf(startOfDay(new Date()));
-    const weekEnd = addDays(weekStart, 6);
-    try {
-      const [perfilData, clases] = await Promise.all([
-        obtenerPerfilInstructor(meta.usuarioId),
-        listarClasesPublico(formatIsoDate(weekStart), formatIsoDate(weekEnd)),
-      ]);
-      setPerfil(perfilData);
-      setClasesSemana(clases);
-    } catch {
-      // Se conserva lo ya cargado si falla el refresco.
-    }
-    setRefrescando(false);
-  }, [meta?.usuarioId]);
+    : undefined;
 
   const classesThisWeek = useMemo(
     () =>
       clasesSemana
-        .filter(clase => clase.instructorId === meta?.usuarioId)
+        .filter(clase => clase.instructorId === instructorId && clase.estado === 'PROGRAMADA')
         .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio.localeCompare(b.horaInicio)),
-    [clasesSemana, meta?.usuarioId],
+    [clasesSemana, instructorId],
+  );
+
+  // El backend no guarda especialidades en el perfil público; se muestran las
+  // actividades que imparte esta semana.
+  const especialidades = useMemo(
+    () => Array.from(new Set(classesThisWeek.map(clase => clase.tipoActividadNombre))),
+    [classesThisWeek],
   );
 
   return (
@@ -131,19 +119,17 @@ export function InstructorProfileScreen({ navigation, route }: Props) {
           <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor={colors.accent} />
         }>
         <View style={styles.profileHeader}>
-          <Image source={perfil?.fotoUrl ? { uri: perfil.fotoUrl } : avatarPlaceholder} style={styles.avatar} />
+          <Image source={fotoUri ? { uri: fotoUri } : avatarPlaceholder} style={styles.avatar} />
           <Text style={styles.name}>{name}</Text>
-          {meta && rating != null && (
+          {rating != null && (
             <View style={styles.ratingRow}>
               <StarIcon color={colors.gold} size={16} />
-              <Text style={styles.ratingText}>
-                {rating} · {meta.clasesImpartidas} clases impartidas
-              </Text>
+              <Text style={styles.ratingText}>{Number(rating).toFixed(1)}</Text>
             </View>
           )}
-          {meta && meta.especialidades.length > 0 && (
+          {especialidades.length > 0 && (
             <View style={styles.chipsRow}>
-              {meta.especialidades.map(especialidad => (
+              {especialidades.map(especialidad => (
                 <View key={especialidad} style={styles.chip}>
                   <Text style={styles.chipLabel}>{especialidad}</Text>
                 </View>

@@ -26,13 +26,16 @@ import { OutlineButton } from '@/components/OutlineButton';
 import { AuthRequiredSheet } from '@/components/AuthRequiredSheet';
 import { CapacityIndicator } from '@/components/CapacityIndicator';
 import { MapPreview } from '@/components/MapPreview';
-import { INSTRUCTOR_META, SALON_ADDRESSES, isClasePast, salonGeocodeQuery, type Categoria } from '@/data/clases';
-import { obtenerClase, reservarClase } from '../api/clases';
+import { isClasePast, type Categoria } from '@/data/clases';
+import { cancelarReserva, obtenerClase, reservarClase } from '../api/clases';
+import { listarSalones } from '../api/salones';
 import { ApiError } from '@/api/client';
-import type { ClaseResponse } from '@/api/types';
+import type { ClaseResponse, PerfilInstructorResponse, SalonResponse } from '@/api/types';
 import { useMisReservas } from '../hooks/useMisReservas';
 import { paqueteActivoDe, useMisPaquetesActivos } from '@/features/packages';
 import { useAuth } from '@/features/auth';
+import { obtenerPerfilInstructor } from '@/features/instructor';
+import { resolveMediaUrl } from '@/utils/media';
 import { colors, commonStyles, fontFamily, fontSize, fontWeight, radius, shadows } from '@/theme';
 import { formatDayMonth, formatFullDate, formatHora } from '@/utils/date';
 import { openDirections } from '@/utils/directions';
@@ -60,6 +63,47 @@ export function ClassDetailScreen({ navigation, route }: Props) {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [authGateOpen, setAuthGateOpen] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [perfilInstructor, setPerfilInstructor] = useState<PerfilInstructorResponse | null>(null);
+  const [salon, setSalon] = useState<SalonResponse | null>(null);
+
+  const instructorId = activeClase?.instructorId;
+  const salonId = activeClase?.salonId;
+
+  useEffect(() => {
+    if (!instructorId) return;
+    let cancelado = false;
+    obtenerPerfilInstructor(instructorId)
+      .then(data => {
+        if (!cancelado) setPerfilInstructor(data);
+      })
+      .catch(() => {
+        // Sin perfil público: la tarjeta muestra solo el nombre de la clase.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [instructorId]);
+
+  // La dirección vive en /api/salones, que exige sesión; como invitado solo
+  // se muestra el nombre del salón.
+  useEffect(() => {
+    if (!salonId || !token) {
+      setSalon(null);
+      return;
+    }
+    let cancelado = false;
+    listarSalones(token)
+      .then(data => {
+        if (!cancelado) setSalon(data.find(s => s.id === salonId) ?? null);
+      })
+      .catch(() => {
+        if (!cancelado) setSalon(null);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [salonId, token]);
 
   useEffect(() => {
     let cancelado = false;
@@ -117,10 +161,13 @@ export function ClassDetailScreen({ navigation, route }: Props) {
   const qrValue = miReserva ? `FEELINGPILATES-RESERVA|${miReserva.id}|${activeClase.id}` : '';
 
   const instructorName = activeClase.instructorNombre;
-  const instructorMeta = INSTRUCTOR_META[`Con ${activeClase.instructorNombre}`];
-  const address = SALON_ADDRESSES[activeClase.salonNombre];
+  const instructorFoto = resolveMediaUrl(perfilInstructor?.fotoUrl);
+  const instructorRating = perfilInstructor?.calificacionPromedio ?? null;
+  const address = salon?.direccion?.trim() || null;
   const locationLabel = address ? `${activeClase.salonNombre} · ${address}` : activeClase.salonNombre;
-  const geocodeQuery = salonGeocodeQuery(activeClase.salonNombre);
+  const geocodeQuery = address
+    ? [address, salon?.municipioNombre, salon?.estadoNombre, 'México'].filter(Boolean).join(', ')
+    : undefined;
   const directionsQuery = geocodeQuery ?? locationLabel;
 
   const beneficios = esBacuFit
@@ -146,12 +193,42 @@ export function ClassDetailScreen({ navigation, route }: Props) {
       await reservarClase(token, activeClase.id);
       recargar();
       setConfirmModalOpen(false);
+      const data = await obtenerClase(activeClase.id).catch(() => null);
+      if (data) setActiveClase(data);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Ocurrió un error inesperado';
       Alert.alert('No se pudo reservar', message);
     } finally {
       setProcesando(false);
     }
+  }
+
+  function handleCancelarReserva() {
+    if (!token || !miReserva || cancelando) {
+      return;
+    }
+    const reservaId = miReserva.id;
+    Alert.alert('Cancelar reserva', '¿Seguro que quieres cancelar tu lugar en esta clase?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sí, cancelar',
+        style: 'destructive',
+        onPress: async () => {
+          setCancelando(true);
+          try {
+            await cancelarReserva(token, reservaId);
+            recargar();
+            const data = await obtenerClase(route.params.claseId).catch(() => null);
+            if (data) setActiveClase(data);
+          } catch (err) {
+            const message = err instanceof ApiError ? err.message : 'Ocurrió un error inesperado';
+            Alert.alert('No se pudo cancelar', message);
+          } finally {
+            setCancelando(false);
+          }
+        },
+      },
+    ]);
   }
 
   return (
@@ -238,16 +315,22 @@ export function ClassDetailScreen({ navigation, route }: Props) {
         {/* Tarjeta de Instructora */}
         <Pressable
           style={styles.instructorCard}
-          onPress={() => navigation.navigate('InstructorProfile', { instructora: `Con ${instructorName}` })}>
-          <Image source={avatarPlaceholder} style={styles.instructorAvatar} />
+          onPress={() =>
+            navigation.navigate('InstructorProfile', {
+              instructorId: activeClase.instructorId,
+              nombre: instructorName,
+            })
+          }>
+          <Image
+            source={instructorFoto ? { uri: instructorFoto } : avatarPlaceholder}
+            style={styles.instructorAvatar}
+          />
           <View style={styles.instructorInfo}>
             <Text style={styles.instructorName}>Con {instructorName}</Text>
-            {instructorMeta && (
+            {instructorRating != null && (
               <View style={styles.ratingRow}>
                 <StarIcon color={colors.gold} size={14} />
-                <Text style={styles.ratingText}>
-                  {instructorMeta.rating} · {instructorMeta.clasesImpartidas} clases impartidas
-                </Text>
+                <Text style={styles.ratingText}>{Number(instructorRating).toFixed(1)}</Text>
               </View>
             )}
           </View>
@@ -286,6 +369,15 @@ export function ClassDetailScreen({ navigation, route }: Props) {
               <QRCode value={qrValue} size={140} />
             </Pressable>
             <Text style={styles.qrHint}>Toca para ampliar</Text>
+            {!past && miReserva?.estado === 'CONFIRMADA' && (
+              <View style={styles.cancelarReservaWrap}>
+                <OutlineButton
+                  label={cancelando ? 'Cancelando…' : 'Cancelar reserva'}
+                  onPress={handleCancelarReserva}
+                  disabled={cancelando}
+                />
+              </View>
+            )}
           </View>
         )}
 
@@ -725,6 +817,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.body,
     fontSize: fontSize.sm,
     color: colors.textMuted,
+  },
+  cancelarReservaWrap: {
+    alignSelf: 'stretch',
+    marginTop: 8,
   },
   qrBackdrop: {
     flex: 1,

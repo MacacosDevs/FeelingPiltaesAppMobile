@@ -124,3 +124,14 @@ export type ClaseReservaResponse = {
   creadoEn: string;
   clase: ClaseResponse;
 };
+
+export type SalonResponse = {
+  id: string;
+  nombre: string;
+  direccion: string | null;
+  estadoId: number | null;
+  estadoNombre: string | null;
+  municipioId: number | null;
+  municipioNombre: string | null;
+  creadoEn: string;
+};

@@ -19,7 +19,8 @@ export type RootStackParamList = {
   EditProfile: undefined;
   InstructorEditProfile: undefined;
   ClassDetail: { claseId: string };
-  InstructorProfile: { instructora: string };
+  // `nombre` solo sirve para pintar el encabezado mientras carga el perfil.
+  InstructorProfile: { instructorId: string; nombre: string };
   InstructorClassDetail: { claseId: string };
   InstructorClassCheckIn: { claseId: string };
   CourtBooking: { horarioId: string };

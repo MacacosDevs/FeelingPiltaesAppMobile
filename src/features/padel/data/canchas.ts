@@ -127,8 +127,7 @@ export function isHorarioPast(horario: Horario, now: Date = new Date()): boolean
 }
 
 // Las direcciones de las demás sedes todavía no están confirmadas; solo se
-// muestra la de Studio 14 hasta tener el dato real (mismo criterio que
-// `SALON_ADDRESSES` en `clases.ts`).
+// muestra la de Studio 14 hasta tener el dato real (Padel aún no tiene backend).
 export const CANCHA_ADDRESSES: Record<string, string> = {
   'Studio 14': 'Plaza Cristal',
 };
